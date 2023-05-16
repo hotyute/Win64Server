@@ -1,0 +1,12 @@
+/*if (bytesAvailable >= 89)
+	{
+		//clear the buffer
+		std::vector<char> discardBuffer(bytesAvailable);
+		int bytesRead = recv(clientSocket, discardBuffer.data(), bytesAvailable, 0);
+		if (bytesRead == SOCKET_ERROR) {
+			std::cerr << "Error receiving data: " << WSAGetLastError() << std::endl;
+		}
+		else {
+			std::cout << "Cleared " << bytesRead << " bytes of data" << std::endl;
+		}
+	}*/
