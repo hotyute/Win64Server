@@ -101,7 +101,7 @@ public:
 
 private:
 	static void process_packet(SOCKET clientSocket, int32_t packetId, int32_t size, BasicStream& buf) {
-		std::cout << "Received packet ID: " << packetId << ", packet size: " << size << std::endl;
+		//std::cout << "Received packet ID: " << packetId << ", packet size: " << size << std::endl;
 		Packet* packet = packetFactory.getPacket(packetId);
 		if (packet != nullptr) {
 			packet->handle(clientSocket, clientManager.getUserBySocket(clientSocket), buf);
