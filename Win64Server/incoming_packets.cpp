@@ -135,7 +135,7 @@ void ClientDisconnect::handle(SOCKET clientSocket, std::shared_ptr<User> user, B
 {
 	int flag = buf.read_unsigned_byte();
 	User& _user = *user;
-	disconnectUser(clientSocket);
+	closesocket(clientSocket);
 	printf("[--User: %s has disconnected--]\n", user->getIdentity().username.c_str());
 }
 

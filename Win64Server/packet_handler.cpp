@@ -20,7 +20,7 @@ extern std::vector<SOCKET> clientSockets;
 
 std::shared_mutex dataMutex;
 
-std::map<SOCKET, std::unique_ptr<BasicStream>> byteData;
+std::map<SOCKET, std::unique_ptr<BasicStream>> byte_data;
 
 void process_packet(SOCKET clientSocket, int32_t packetId, int32_t size, BasicStream& buf) {
 	//std::cout << "Received packet ID: " << packetId << ", packet size: " << size << std::endl;
@@ -32,15 +32,15 @@ void process_packet(SOCKET clientSocket, int32_t packetId, int32_t size, BasicSt
 
 void checkClientData(SOCKET clientSocket) {
 	std::unique_lock<std::shared_mutex> lock(dataMutex);
-	auto it = byteData.find(clientSocket);
-	if (it == byteData.end()) {
-		byteData.emplace(clientSocket, std::make_unique<BasicStream>());
+	auto it = byte_data.find(clientSocket);
+	if (it == byte_data.end()) {
+		byte_data.emplace(clientSocket, std::make_unique<BasicStream>());
 	}
 }
 
 void removeClientData(SOCKET clientSocket) {
 	std::unique_lock<std::shared_mutex> lock(dataMutex);
-	byteData.erase(clientSocket);
+	byte_data.erase(clientSocket);
 }
 
 class PacketProcessor {
@@ -95,7 +95,6 @@ public:
 
 			// Delete the processed packet header data from the stream
 			stream.delete_marked_block();
-			
 		}
 	}
 
@@ -114,62 +113,78 @@ void handle_client(SOCKET clientSocket) {
 	// Initialize the Stream buffer for the clientSocket if not already created
 	checkClientData(clientSocket);
 
-	BasicStream& buf = *byteData[clientSocket];
+	BasicStream& buf = *byte_data[clientSocket];
 
 	// Check for available bytes in the socket
 	u_long bytes_available = 0;
 	int result = ioctlsocket(clientSocket, FIONREAD, &bytes_available);
 
+	lastPacketReceived[clientSocket] = std::chrono::steady_clock::now();
+
 	// Read data from the socket into the buffer
-	buf.add_data(clientSocket);
+	int recv_bytes = buf.add_data(clientSocket);
+
+	check_recv_error(clientSocket, recv_bytes);
 
 	// Process packets in the buffer
 	PacketProcessor::processStream(clientSocket, buf);
 }
 
-void handle_recv_error(int received) {
+void check_recv_error(SOCKET clientSocket, int received) {
 	if (received == SOCKET_ERROR) {
 		int error = WSAGetLastError();
 		if (error != WSAEWOULDBLOCK) {
-			std::cerr << "Error receiving data: " << error << std::endl;
+			if (error == WSAENOTSOCK) {
+				disconnect_user(clientSocket);
+				removeClientSocket(clientSocket, true);
+			}
+			else {
+				std::cerr << "Error receiving data: " << error << std::endl;
+			}
 		}
 	}
 	else if (received == 0) {
 		std::cout << "Client disconnected" << std::endl;
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
 	}
-	else {
-		std::cerr << "Received incomplete header" << std::endl;
-	}
-	std::this_thread::sleep_for(std::chrono::milliseconds(30));
 }
 
-void disconnectUser(SOCKET clientSocket) {
+void disconnect_user(SOCKET clientSocket) {
 	// Perform user-specific cleanup, such as saving user data, notifying other users, etc.
 	// Example:
-	std::shared_ptr<User> user = clientManager.getUserBySocket(clientSocket);
+	const std::shared_ptr<User> user = clientManager.getUserBySocket(clientSocket);
 	if (user && user->isValid()) {
 		// Save user data, remove from chat rooms, etc.
-		// ...
+		user->iterateLocalUsers([&](const auto& local) {
+			User& other = *local.first;
+			delete_client(other, *user);
+			{
+				std::unique_lock<std::shared_mutex> lock(other.local_mutex);
+				other.local_users.erase(user);
+			}
+			adjust_time(local.first);
+			});
 		// Remove the user from the user manager:
 		clientManager.removeUser(clientSocket);
 	}
-
-	// Close the client socket and remove it from the clientSockets vector
-	closeClientSocket(clientSocket);
 }
 
-void closeClientSocket(SOCKET clientSocket) {
+void removeClientSocket(SOCKET clientSocket, bool close) {
 	removeClientData(clientSocket);
 
 	std::shared_lock<std::shared_mutex> lock(clientSocketsMutex);
-	auto it = std::find(clientSockets.begin(), clientSockets.end(), clientSocket);
+	const auto it = std::find(clientSockets.begin(), clientSockets.end(), clientSocket);
 	if (it != clientSockets.end()) {
 		clientSockets.erase(it);
-		closesocket(clientSocket);
+		if (close) {
+			closesocket(clientSocket);
+		}
 	}
 }
 
+void handle_timeout(SOCKET clientSocket, bool close) {
 
+}
 
 
 

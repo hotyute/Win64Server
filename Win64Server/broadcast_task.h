@@ -1,6 +1,7 @@
 #pragma once
 
 #include <winsock2.h>
+#include <unordered_map>
 #include <shared_mutex>
 
 #include "timed_task.h"
@@ -17,3 +18,4 @@ protected:
 
 extern std::shared_mutex clientSocketsMutex;
 extern std::vector<SOCKET> clientSockets;
+extern std::unordered_map<SOCKET, std::chrono::steady_clock::time_point> lastPacketReceived;

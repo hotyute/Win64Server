@@ -18,14 +18,14 @@ BasicStream::~BasicStream()
 	delete[] data;
 }
 
-bool BasicStream::add_data(SOCKET clientSocket)
+int BasicStream::add_data(SOCKET clientSocket)
 {
 	u_long bytes_available = 0;
 	const int result = ioctlsocket(clientSocket, FIONREAD, &bytes_available);
 
 	if (result == SOCKET_ERROR) {
 		std::cerr << "ioctlsocket failed with error: " << WSAGetLastError() << std::endl;
-		return false;
+		return result;
 	}
 
 	const auto new_data = new char[data_size + bytes_available];
@@ -34,7 +34,7 @@ bool BasicStream::add_data(SOCKET clientSocket)
 	if (bytes_read == SOCKET_ERROR) {
 		std::cerr << "recv failed with error: " << WSAGetLastError() << std::endl;
 		delete[] new_data;
-		return false;
+		return bytes_read;
 	}
 
 	if (data) {
@@ -45,7 +45,7 @@ bool BasicStream::add_data(SOCKET clientSocket)
 	data = new_data;
 	data_size += bytes_read;
 
-	return true;
+	return bytes_read;
 }
 
 std::size_t BasicStream::available() const

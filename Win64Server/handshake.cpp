@@ -128,7 +128,7 @@ void HandshakePacket::handle(SOCKET clientSocket, std::shared_ptr<User> user, Ba
 			Stream out = Stream(1);
 			out.writeByte(response);
 			write(*newUser, out);
-			closeClientSocket(clientSocket);
+			removeClientSocket(clientSocket, true);
 		}
 	}
 }

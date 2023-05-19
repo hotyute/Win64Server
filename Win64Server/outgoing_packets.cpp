@@ -209,7 +209,7 @@ void send_data(SOCKET clientSocket, const std::vector<char>& buffer) {
 	while (total_sent < buffer.size()) {
 		const int sent = send(clientSocket, buffer.data() + total_sent, static_cast<int>(remaining), 0);
 		if (sent == SOCKET_ERROR) {
-			std::cerr << "Error sending broadcast message: " << WSAGetLastError() << std::endl;
+			std::cerr << "Error sending data: " << WSAGetLastError() << std::endl;
 			break;
 		}
 

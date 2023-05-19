@@ -12,7 +12,7 @@ public:
 
 	~BasicStream();
 
-	bool add_data(SOCKET clientSocket);
+	int add_data(SOCKET clientSocket);
 
 	std::size_t available() const;
 

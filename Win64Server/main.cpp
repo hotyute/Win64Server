@@ -20,6 +20,7 @@ constexpr int TIMER_INTERVAL = 30;
 std::atomic<bool> serverRunning;
 std::shared_mutex clientSocketsMutex;
 std::vector<SOCKET> clientSockets;
+std::unordered_map<SOCKET, std::chrono::steady_clock::time_point> lastPacketReceived;
 
 int initWinsock(WSADATA& wsData) {
 	WORD ver = MAKEWORD(2, 2);
@@ -43,10 +44,10 @@ bool setSocketToListen(SOCKET& listening) {
 	return listen(listening, SOMAXCONN) != SOCKET_ERROR;
 }
 
-void process_clients(const std::vector<SOCKET>& clientSockets, std::atomic<bool>& running, size_t start, size_t end) {
+void process_clients(const std::vector<SOCKET>& client_sockets, std::atomic<bool>& running, size_t start, size_t end) {
 	std::shared_lock<std::shared_mutex> lock(clientSocketsMutex);
 	for (size_t i = start; i < end; ++i) {
-		const SOCKET clientSocket = clientSockets[i];
+		const SOCKET clientSocket = client_sockets[i];
 		fd_set readfds;
 		FD_ZERO(&readfds);
 		FD_SET(clientSocket, &readfds);
@@ -57,7 +58,12 @@ void process_clients(const std::vector<SOCKET>& clientSockets, std::atomic<bool>
 
 		const int activity = select(0, &readfds, nullptr, nullptr, &timeout);
 		if (activity == SOCKET_ERROR) {
-			std::cerr << "Select failed! Error: " << WSAGetLastError() << std::endl;
+			int error = WSAGetLastError();
+			std::cerr << "Select failed! Error: " << error << std::endl;
+			if (error == WSAENOTSOCK) {
+				disconnect_user(clientSocket);
+				removeClientSocket(clientSocket, true);
+			}
 			continue;
 		}
 
@@ -67,13 +73,14 @@ void process_clients(const std::vector<SOCKET>& clientSockets, std::atomic<bool>
 	}
 }
 
-void timerFunction(std::atomic<bool>& serverRunning, ThreadPool &threadPool) {
-	const std::chrono::milliseconds timerCvInterval{ 30 };    // Adjust this value for the desired interval of the timerCv timer
+void timerFunction(const std::atomic<bool>& server_running, ThreadPool& threadPool) {
+	constexpr std::chrono::milliseconds timerCvInterval(30);    // Adjust this value for the desired interval of the timerCv timer
+	constexpr std::chrono::seconds timeoutDuration(11); // Timeout after 11 seconds of inactivity
 
-	auto lastTimedTaskExecution = std::vector<std::chrono::steady_clock::time_point>(TimedTask::get_tasks().size(), std::chrono::steady_clock::now());
-	auto lastTimerCvExecution = std::chrono::steady_clock::now();
+	auto last_timed_task_execution = std::vector<std::chrono::steady_clock::time_point>(TimedTask::get_tasks().size(), std::chrono::steady_clock::now());
+	auto last_timer_cv_execution = std::chrono::steady_clock::now();
 
-	while (serverRunning) {
+	while (server_running) {
 		auto currentTime = std::chrono::steady_clock::now();
 
 		// Enqueue tasks if the interval has passed
@@ -81,15 +88,36 @@ void timerFunction(std::atomic<bool>& serverRunning, ThreadPool &threadPool) {
 			std::unique_lock<std::mutex> lock(TimedTask::get_tasks_mutex());
 			for (size_t i = 0; i < TimedTask::get_tasks().size(); ++i) {
 				TimedTask* task = TimedTask::get_tasks()[i];
-				if (task->is_running() && currentTime - lastTimedTaskExecution[i] >= task->get_duration()) {
+				if (task->is_running() && currentTime - last_timed_task_execution[i] >= task->get_duration()) {
 					task->enqueue_execute();
-					lastTimedTaskExecution[i] = currentTime;
+					last_timed_task_execution[i] = currentTime;
+				}
+			}
+		}
+
+		// Check for timeouts
+		{
+			std::unique_lock<std::shared_mutex> lock(clientSocketsMutex);
+			auto currentTime = std::chrono::steady_clock::now();
+
+			for (auto it = lastPacketReceived.begin(); it != lastPacketReceived.end(); /* no increment here */) {
+				if (currentTime - it->second > timeoutDuration) {
+					// Handle socket timeout
+					threadPool.enqueue([&it]() {
+						handle_timeout(it->first);
+						});
+
+					// Remove it from the lastPacketReceived map and increment the iterator
+					it = lastPacketReceived.erase(it);
+				}
+				else {
+					++it;
 				}
 			}
 		}
 
 		// Check if the clientSockets interval has passed
-		if (currentTime - lastTimerCvExecution >= timerCvInterval) {
+		if (currentTime - last_timer_cv_execution >= timerCvInterval) {
 			const size_t num_clients = clientSockets.size();
 			const size_t clients_per_thread = num_clients / PROCESS_THREADS;
 			size_t remaining_clients = num_clients % PROCESS_THREADS;
@@ -111,7 +139,7 @@ void timerFunction(std::atomic<bool>& serverRunning, ThreadPool &threadPool) {
 					});
 			}
 
-			lastTimerCvExecution = currentTime;
+			last_timer_cv_execution = currentTime;
 		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Sleep for a short time to avoid busy looping

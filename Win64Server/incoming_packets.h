@@ -10,7 +10,7 @@ class PongPacket : public Packet {
 public:
     PongPacket(int32_t id, int32_t size) : Packet(id, size) {}
 
-    void handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf) override {};
+    void handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf) override {}
 };
 
 class PilotUpdate : public Packet {
