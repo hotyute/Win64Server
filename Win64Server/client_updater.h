@@ -36,7 +36,7 @@ bool is_digits(const std::string& str);
 
 bool contains_user(const std::shared_ptr<User>& user, const std::shared_ptr<User>& user2);
 
-void* timeUpdate(const std::shared_ptr<User>&, const std::shared_ptr<User>&);
+std::shared_ptr<long long> timeUpdate(const std::shared_ptr<User>&, const std::shared_ptr<User>&);
 
 void check_timeout(const std::shared_ptr<User>& user);
 

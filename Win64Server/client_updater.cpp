@@ -114,9 +114,9 @@ void update(const std::shared_ptr<User>&user) {
 			return;
 
 		const auto userReqInterval = user->getRequestedInterval(other->getType());
-		void* time = timeUpdate(other, user);
+		const auto time = timeUpdate(other, user);
 		if (time != nullptr) {
-			auto check = reinterpret_cast<long long>(time);
+			//something?
 		}
 		std::vector<void*> att = local_user.second;
 		const auto otherUpdateStamp = other->getLastPositionUpdate();
@@ -214,15 +214,15 @@ bool contains_user(const std::shared_ptr<User>&user, const std::shared_ptr<User>
 	return (user->local_users.find(user2) != user->local_users.end());
 }
 
-void* timeUpdate(const std::shared_ptr<User>&user, const std::shared_ptr<User>&other) {
+std::shared_ptr<long long> timeUpdate(const std::shared_ptr<User>& user, const std::shared_ptr<User>& other) {
 	const long long otherReqInterval = other->getRequestedInterval(user->getType());
 	if (user->getUpdateInterval() > otherReqInterval) {
 		user->setUpdateInterval(otherReqInterval);
 		send_time_change(*user, otherReqInterval);
-		return reinterpret_cast<void*>(otherReqInterval);
+		return std::make_shared<long long>(otherReqInterval);
 	}
 	// Returned the current user's update interval if it's less than or equal to the other user's
-	return reinterpret_cast<void*>(user->getUpdateInterval());
+	return std::make_shared<long long>(user->getUpdateInterval());
 }
 
 void check_timeout(const std::shared_ptr<User>&user)

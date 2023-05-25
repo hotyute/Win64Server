@@ -199,7 +199,7 @@ int main() {
 
 	constexpr std::chrono::milliseconds broadcast_interval(10000);
 	// Create a Tasks
-	constexpr std::chrono::milliseconds update_interval(60); // Broadcast every 10 seconds PING Pakcet
+	constexpr std::chrono::milliseconds update_interval(50); // Broadcast every 10 seconds PING Pakcet
 	BroadcastTask broadcast_task(threadPool, broadcast_interval);
 	UpdateTask update_task(threadPool, update_interval);
 
