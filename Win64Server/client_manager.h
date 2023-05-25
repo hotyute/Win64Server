@@ -131,7 +131,6 @@ public:
 		return nullptr;
 	}
 
-	mutable std::shared_mutex client_mutex_;
 	std::unordered_map<SOCKET, std::shared_ptr<User>> clients_;
 
 private:
@@ -139,6 +138,7 @@ private:
 	std::unordered_map<int, std::shared_ptr<User>> users_by_index_;
 	std::unordered_map<std::string, std::shared_ptr<User>> users_by_callsign;
 	std::queue<int> available_indices_;
+	mutable std::shared_mutex client_mutex_;
 	mutable std::shared_mutex id_mutex_;
 	mutable std::shared_mutex index_mutex_;
 	mutable std::shared_mutex callsign_mutex_;

@@ -31,9 +31,7 @@ void globalUpdate()
 
 	//update local users first (add and delete users around the main user)
 	{
-		std::shared_lock<std::shared_mutex> lock(clientManager.client_mutex_);
-		for (const auto& pair : clientManager.clients_) {
-			std::shared_ptr<User> user = pair.second;
+		clientManager.iterate_users([&](const std::shared_ptr<User>& user) {
 			if (user) {
 				updateLocalUsers(user);
 
@@ -43,7 +41,7 @@ void globalUpdate()
 					user->setTriggerUpdate(false);
 				}
 			}
-		}
+			});
 	}
 
 	//update users now (which basically means updating the user's local users about main user)
@@ -214,7 +212,7 @@ bool contains_user(const std::shared_ptr<User>&user, const std::shared_ptr<User>
 	return (user->local_users.find(user2) != user->local_users.end());
 }
 
-std::shared_ptr<long long> timeUpdate(const std::shared_ptr<User>& user, const std::shared_ptr<User>& other) {
+std::shared_ptr<long long> timeUpdate(const std::shared_ptr<User>&user, const std::shared_ptr<User>&other) {
 	const long long otherReqInterval = other->getRequestedInterval(user->getType());
 	if (user->getUpdateInterval() > otherReqInterval) {
 		user->setUpdateInterval(otherReqInterval);
