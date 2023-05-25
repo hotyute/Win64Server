@@ -136,7 +136,7 @@ void handle_client(SOCKET clientSocket) {
 	PacketProcessor::processStream(clientSocket, buf);
 }
 
-void check_recv_error(SOCKET clientSocket, int received) {
+void check_recv_error(SOCKET clientSocket, const int received) {
 	if (received == SOCKET_ERROR) {
 		const int error = WSAGetLastError();
 		if (error != WSAEWOULDBLOCK) {

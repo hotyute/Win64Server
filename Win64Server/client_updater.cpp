@@ -121,91 +121,73 @@ void update(const std::shared_ptr<User>&user) {
 		std::vector<void*> att = local_user.second;
 		const auto otherUpdateStamp = other->getLastPositionUpdate();
 		void* last = att[LAST_POS_UPDATE];//TODO Bug over here when someone else disconnects, invalid parameter passed, perhaps synch?
-		if (other->getUpdateInterval() > userReqInterval)
-		{
+		if (other->getUpdateInterval() > userReqInterval) {
 			std::cout << "Interval Requested is Lower than current Update Interval." << std::endl;
 		}
 		else
 		{
-			if (user->isUpdateRequired())
-			{
+			if (user->isUpdateRequired()) {
 				//don't need to do an interval check, since the user has already been marked as needing an update
 				//user gets updated of surrounding player's positions
-				if (other->getType() == PILOT_CLIENT)
-				{
-					send_pilot_update(*user, dynamic_cast<Aircraft&>(*other));
-				}
-				else if (other->getType() == CONTROLLER_CLIENT)
-				{
-					send_controller_update(*user, dynamic_cast<Controller&>(*other));
-				}
+				send_pos_update(user, other);
 				att[LAST_POS_UPDATE] = reinterpret_cast<void*>(otherUpdateStamp);
 				user->local_users[other] = att;
 			}
-			else
-			{
+			else {
 				if (last) {
 					const auto user_other_update_stamp = reinterpret_cast<long long>(last);
 					const auto now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 					const auto interval = (now - user_other_update_stamp);
 					//if the timestamp changed from last update it means the other player updated
 					//and if last interval meets user's requested time
-					if (user_other_update_stamp != otherUpdateStamp && interval >= userReqInterval)
-					{
+					if (user_other_update_stamp != otherUpdateStamp && interval >= userReqInterval) {
 						const long long minTime = userReqInterval - other->getUpdateInterval();
 						const long long maxTime = userReqInterval + other->getUpdateInterval();
 						if (interval >= minTime && interval <= maxTime) {
 							//it is within range for update
-							if (other->getType() == PILOT_CLIENT)
-							{
-								send_pilot_update(*user, dynamic_cast<Aircraft&>(*other));
-							}
-							else if (other->getType() == CONTROLLER_CLIENT)
-							{
-								send_controller_update(*user, dynamic_cast<Controller&>(*other));
-							}
+							send_pos_update(user, other);
 							att[LAST_POS_UPDATE] = reinterpret_cast<void*>(otherUpdateStamp);
 							user->local_users[other] = att;
 						}
-						else if (interval > maxTime)
-						{
+						else if (interval > maxTime) {
 							//it has overlapped the time range for update (long overdue for update)
 							//it should never overlap, however just in-case we need to inform all other players of overlap
-							if (user->getType() == PILOT_CLIENT)
-							{
-								send_pilot_update(*other, dynamic_cast<Aircraft&>(*user));
-							}
-							else if (user->getType() == CONTROLLER_CLIENT)
-							{
-								send_controller_update(*other, dynamic_cast<Controller&>(*user));
-							}
+							send_pos_update(other, user);
 							att[LAST_POS_UPDATE] = reinterpret_cast<void*>(otherUpdateStamp);
 							user->local_users[other] = att;
 						}
-						else
-						{
+						else {
 							//It has not yet within range!!
 						}
 					}
 				}
-				else
-				{
+				else {
 					//we have not updated yet, so update now
 					//to prevent CPU intense calculations in interval, we send an update to other players on initial update
-					if (user->getType() == PILOT_CLIENT)
-					{
-						send_pilot_update(*other, dynamic_cast<Aircraft&>(*user));
-					}
-					else if (user->getType() == CONTROLLER_CLIENT)
-					{
-						send_controller_update(*other, dynamic_cast<Controller&>(*user));
-					}
+					send_pos_update(other, user);
 					att[LAST_POS_UPDATE] = reinterpret_cast<void*>(otherUpdateStamp);
 					user->local_users[other] = att;
 				}
 			}
 		}
 		});
+}
+
+void send_pos_update(const std::shared_ptr<User>&updated_user, const std::shared_ptr<User>&about_user) {
+	if (about_user->getType() == PILOT_CLIENT)
+	{
+		const auto aircraft = dynamic_cast<Aircraft*>(about_user.get());
+		if (aircraft) {
+			send_pilot_update(*updated_user, *aircraft);
+		}
+	}
+	else if (about_user->getType() == CONTROLLER_CLIENT)
+	{
+		const auto controller = dynamic_cast<Controller*>(about_user.get());
+		if (controller) {
+			send_controller_update(*updated_user, *controller);
+		}
+	}
 }
 
 void updateOnlyQueues(User & user) {
@@ -239,7 +221,8 @@ void* timeUpdate(const std::shared_ptr<User>&user, const std::shared_ptr<User>&o
 		send_time_change(*user, otherReqInterval);
 		return reinterpret_cast<void*>(otherReqInterval);
 	}
-	return nullptr;
+	// Returned the current user's update interval if it's less than or equal to the other user's
+	return reinterpret_cast<void*>(user->getUpdateInterval());
 }
 
 void check_timeout(const std::shared_ptr<User>&user)

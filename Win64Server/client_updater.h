@@ -26,6 +26,8 @@ void updateLocalUsers(const std::shared_ptr<User>&);
 
 void update(const std::shared_ptr<User>&);
 
+void send_pos_update(const std::shared_ptr<User>& updated_user, const std::shared_ptr<User>& about_user);
+
 void updateOnlyQueues(User& user);
 
 double dist(double lat1, double lon1, double lat2, double lon2);
