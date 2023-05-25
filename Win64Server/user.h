@@ -29,7 +29,7 @@ struct Identity {
 	std::string login_name;
 	std::string password;
 	std::string username;
-	~Identity() {};
+	~Identity() {}
 };
 
 class User {

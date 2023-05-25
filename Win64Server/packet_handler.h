@@ -3,12 +3,6 @@
 #include <winsock2.h>
 #include <vector>
 #include <cstdint>
-#include <map>
-
-#include "Stream.h"
-#include "constants.h"
-#include "handshake.h"
-#include "packet.h"
 
 void process_packet(SOCKET clientSocket, int32_t packetId, const std::vector<char>& packetData);
 

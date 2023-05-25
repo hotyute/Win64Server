@@ -40,6 +40,6 @@ void send_private_message(User& user, const std::string& from, const char* messa
 
 void delete_client(User& user, const User& client);
 
-void write(User& user, const Stream& stream);
+void write(User& user, BasicStream& stream);
 
 void send_data(SOCKET clientSocket, const std::vector<char>& buffer);

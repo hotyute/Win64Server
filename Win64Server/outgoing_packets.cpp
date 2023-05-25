@@ -8,53 +8,53 @@
 #include "controller.h"
 
 void send_server_message(User& user, const char* message) {
-	auto out = Stream(256);
-	out.createFrameVarSize(7);
-	out.writeString(message);
-	out.endFrameVarSize();
+	auto out = BasicStream(256);
+	out.create_frame_var_size(7);
+	out.write_string(message);
+	out.end_frame_var_size();
 	write(user, out);
 }
 
 void send_wx(User& user, const char* weather) {
-	auto out = Stream(128);
-	out.createFrameVarSize(8);
-	out.writeString(weather);
-	out.endFrameVarSize();
+	auto out = BasicStream(128);
+	out.create_frame_var_size(8);
+	out.write_string(weather);
+	out.end_frame_var_size();
 	write(user, out);
 }
 
 void create_client(User& user, User& client)
 {
-	auto out = Stream(256);
+	auto out = BasicStream(256);
 	const int clientType = client.getType();
-	out.createFrameVarSizeWord(9);
-	out.writeWord(client.getIndex());
-	out.writeByte(clientType);
+	out.create_frame_var_size_word(9);
+	out.write_short(client.getIndex());
+	out.write_byte(clientType);
 	const Identity id = client.getIdentity();
-	out.writeString((id.callsign.c_str()));
-	out.writeString((id.username.c_str()));
-	out.writeString((id.login_name.c_str()));
-	out.writeWord(client.getVisibilityRange());
-	out.writeQWord(doubleToRawBits(client.getLocation().getLatitude()));
-	out.writeQWord(doubleToRawBits(client.getLocation().getLongitude()));
+	out.write_string((id.callsign.c_str()));
+	out.write_string((id.username.c_str()));
+	out.write_string((id.login_name.c_str()));
+	out.write_short(client.getVisibilityRange());
+	out.write_qword(doubleToRawBits(client.getLocation().getLatitude()));
+	out.write_qword(doubleToRawBits(client.getLocation().getLongitude()));
 	if (clientType == AV_CLIENT::CONTROLLER)
 	{
 		const auto& controller = dynamic_cast<Controller&>(client);
-		out.writeByte(controller.controller_rating);
-		out.writeByte(controller.controller_position);
-		out.write3Byte(controller.frequencies[0]);
+		out.write_byte(controller.controller_rating);
+		out.write_byte(controller.controller_position);
+		out.write_3byte(controller.frequencies[0]);
 	}
 	else if (clientType == AV_CLIENT::PILOT)
 	{
 		auto& aircraft = dynamic_cast<Aircraft&>(client);
-		out.writeString(aircraft.getAcfTitle().c_str());
-		out.writeString(aircraft.getTransponder().c_str());
-		out.writeByte(aircraft.getMode() << 4 | (aircraft.heavy ? 1 : 0));
-		out.writeQWord(((static_cast<int>((aircraft.getState().getPitch() * 1024.0) / -360.0) << 22)
+		out.write_string(aircraft.getAcfTitle().c_str());
+		out.write_string(aircraft.getTransponder().c_str());
+		out.write_byte(aircraft.getMode() << 4 | (aircraft.heavy ? 1 : 0));
+		out.write_qword(((static_cast<int>((aircraft.getState().getPitch() * 1024.0) / -360.0) << 22)
 			+ (static_cast<int>((aircraft.getState().getRoll() * 1024.0) / -360.0) << 12)
 			+ (static_cast<int>((aircraft.getState().getHeading() * 1024.0) / 360.0) << 2)));
 	}
-	out.endFrameVarSizeWord();
+	out.end_frame_var_size_word();
 	write(user, out);
 }
 
@@ -68,138 +68,143 @@ void create_flight_plan(User& user, User& client) {
 }
 
 void send_time_change(User& user, const long long time) {
-	auto out = Stream(10);
-	out.createFrame(10);
-	out.writeQWord(time);
+	auto out = BasicStream(10);
+	out.create_frame(10);
+	out.write_qword(time);
 	printf("send_time: %s %lld\n", user.getCallsign().c_str(), time);
 	write(user, out);
 }
 
 void send_private_message(User& user, const std::string& from, const char* message) {
-	auto out = Stream(256);
-	out.createFrameVarSizeWord(11);
-	out.writeString(from.c_str());
-	out.writeString(message);
-	out.endFrameVarSizeWord();
+	auto out = BasicStream(256);
+	out.create_frame_var_size_word(11);
+	out.write_string(from.c_str());
+	out.write_string(message);
+	out.end_frame_var_size_word();
 	write(user, out);
 }
 
 void delete_client(User& user, const User& client) {
-	auto out = Stream(3);
-	out.createFrame(12);
-	out.writeWord(client.getIndex());
+	auto out = BasicStream(3);
+	out.create_frame(12);
+	out.write_short(client.getIndex());
 	write(user, out);
 }
 
 void send_ping(User& user) {
-	auto out = Stream(1);
-	out.createFrame(13);
+	auto out = BasicStream(1);
+	out.create_frame(13);
 	write(user, out);
 }
 
 void send_pilot_update(User& user, Aircraft& other) {
-	auto out = Stream(37);
-	out.createFrame(14);
-	out.writeWord(other.getIndex());
+	auto out = BasicStream(37);
+	out.create_frame(14);
+	out.write_short(other.getIndex());
 	const double latitude = other.getLocation().getLatitude();
 	const double longitude = other.getLocation().getLongitude();
-	out.writeQWord(doubleToRawBits(latitude));
-	out.writeQWord(doubleToRawBits(longitude));
+	out.write_qword(doubleToRawBits(latitude));
+	out.write_qword(doubleToRawBits(longitude));
 	const long long infoHash = (static_cast<int>((other.getState().getPitch() * 1024.0) / -360.0) << 22)
 		+ (static_cast<int>((other.getState().getRoll() * 1024.0) / -360.0) << 12)
 		+ (static_cast<int>((other.getState().getHeading() * 1024.0) / 360.0) << 2);
-	out.writeQWord(infoHash);
-	out.writeWord(other.getState().getGroundSpeed());
+	out.write_qword(infoHash);
+	out.write_short(other.getState().getGroundSpeed());
 	const double altitude = other.getState().getAltitude();
-	out.writeQWord(doubleToRawBits(altitude));
+	out.write_qword(doubleToRawBits(altitude));
 	write(user, out);
 }
 
 void send_message(User& user, const User& from, const int frequency, const char* message, const bool asel) {
-	auto out = Stream(512);
-	out.createFrameVarSizeWord(15);
-	out.writeWord(from.getIndex());
-	out.write3Byte(frequency);
-	out.writeByte(asel ? 1 : 0);
-	out.writeString(message);
-	out.endFrameVarSizeWord();
+	auto out = BasicStream(512);
+	out.create_frame_var_size_word(15);
+	out.write_short(from.getIndex());
+	out.write_3byte(frequency);
+	out.write_byte(asel ? 1 : 0);
+	out.write_string(message);
+	out.end_frame_var_size_word();
 	write(user, out);
 }
 
 void send_client_mode_change(User& user, const Aircraft& other) {
-	auto out = Stream(4);
-	out.createFrame(16);
-	out.writeWord(other.getIndex());
-	out.writeByte(other.getMode());
+	auto out = BasicStream(4);
+	out.create_frame(16);
+	out.write_short(other.getIndex());
+	out.write_byte(other.getMode());
 	write(user, out);
 }
 
 void send_flight_plan_cycle(User& user, User& from) {
-	auto out = Stream(256);
+	auto out = BasicStream(256);
 	const FlightPlan& fp = *dynamic_cast<Aircraft&>(from).getFlightPlan();
-	out.createFrameVarSizeWord(17);
-	out.writeWord(from.getIndex());
-	out.writeWord(fp.cycle);
-	out.writeByte(from.getType());
+	out.create_frame_var_size_word(17);
+	out.write_short(from.getIndex());
+	out.write_short(fp.cycle);
+	out.write_byte(from.getType());
 	if (from.getType() == PILOT_CLIENT)
 	{
-		out.writeByte(fp.flightRules);
-		out.writeString(fp.squawkCode.c_str());
-		out.writeString(fp.departure.c_str());
-		out.writeString(fp.arrival.c_str());
-		out.writeString(fp.alternate.c_str());
-		out.writeString(fp.cruise.c_str());
-		out.writeString(fp.acType.c_str());
-		out.writeString(fp.scratchPad.c_str());
-		out.writeString(fp.route.c_str());
-		out.writeString(fp.remarks.c_str());
+		out.write_byte(fp.flightRules);
+		out.write_string(fp.squawkCode.c_str());
+		out.write_string(fp.departure.c_str());
+		out.write_string(fp.arrival.c_str());
+		out.write_string(fp.alternate.c_str());
+		out.write_string(fp.cruise.c_str());
+		out.write_string(fp.acType.c_str());
+		out.write_string(fp.scratchPad.c_str());
+		out.write_string(fp.route.c_str());
+		out.write_string(fp.remarks.c_str());
 	}
-	out.endFrameVarSizeWord();
+	out.end_frame_var_size_word();
 	write(user, out);
 }
 
 void send_controller_update(User& user, Controller& other) {
-	auto out = Stream(20);
-	out.createFrame(18);
-	out.writeWord(other.getIndex());
+	auto out = BasicStream(20);
+	out.create_frame(18);
+	out.write_short(other.getIndex());
 	const double latitude = other.getLocation().getLatitude();
 	const double longitude = other.getLocation().getLongitude();
-	out.writeQWord(doubleToRawBits(latitude));
-	out.writeQWord(doubleToRawBits(longitude));
-	out.writeByte(0);
+	out.write_qword(doubleToRawBits(latitude));
+	out.write_qword(doubleToRawBits(longitude));
+	out.write_byte(0);
 	write(user, out);
 }
 
 void send_vis_update(User& user, const User& update) {
-	auto out = Stream(5);
-	out.createFrame(19);
-	out.writeWord(update.getIndex());
-	out.writeWord(update.getVisibilityRange());
+	auto out = BasicStream(5);
+	out.create_frame(19);
+	out.write_short(update.getIndex());
+	out.write_short(update.getVisibilityRange());
 	write(user, out);
 }
 
 void send_client_transponder(User& user, const Aircraft& other) {
-	auto out = Stream(20);
-	out.createFrameVarSize(20);
-	out.writeWord(other.getIndex());
-	out.writeString(other.getTransponder().c_str());
-	out.endFrameVarSize();
+	auto out = BasicStream(20);
+	out.create_frame_var_size(20);
+	out.write_short(other.getIndex());
+	out.write_string(other.getTransponder().c_str());
+	out.end_frame_var_size();
 	write(user, out);
 }
 
 void send_prim_freq(User& user, const User& other)
 {
-	auto out = Stream(8);
-	out.createFrame(21);
-	out.writeWord(other.getIndex());
-	out.writeByte(0);
-	out.writeDWord(other.frequencies[0]);
+	auto out = BasicStream(8);
+	out.create_frame(21);
+	out.write_short(other.getIndex());
+	out.write_byte(0);
+	out.write_int(other.frequencies[0]);
 	write(user, out);
 }
 
-void write(User& user, const Stream& stream) {
+void write(User& user, BasicStream& stream) {
 	std::lock_guard<std::mutex> lock(user.send_data_mutex);
-	send_data(user.getClientSocket(), std::vector<char>(stream.buffer, stream.buffer + stream.currentOffset));
+	if (stream.get_index() == 0) {
+		printf("Can't flush empty stream o.O");
+		return;
+	}
+	send_data(user.getClientSocket(), std::vector<char>(stream.data, stream.data + stream.index));
+	stream.clear();
 }
 
 void send_data(SOCKET clientSocket, const std::vector<char>& buffer) {
@@ -209,7 +214,13 @@ void send_data(SOCKET clientSocket, const std::vector<char>& buffer) {
 	while (total_sent < buffer.size()) {
 		const int sent = send(clientSocket, buffer.data() + total_sent, static_cast<int>(remaining), 0);
 		if (sent == SOCKET_ERROR) {
-			std::cerr << "Error sending data: " << WSAGetLastError() << std::endl;
+			int error = WSAGetLastError();
+			if (error == WSAEWOULDBLOCK) {
+				// Sleep for a short period of time to prevent busy waiting
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				continue;
+			}
+			std::cerr << "Error sending data: " << error << std::endl;
 			break;
 		}
 

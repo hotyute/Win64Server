@@ -14,15 +14,16 @@
 
 constexpr int PORT = 4403;
 constexpr int NUM_THREADS = 8;
-constexpr int PROCESS_THREADS = 2;
+constexpr int PROCESS_THREADS = 1;
 constexpr int TIMER_INTERVAL = 30;
 
 std::atomic<bool> serverRunning;
 std::shared_mutex clientSocketsMutex;
 std::vector<SOCKET> clientSockets;
+std::shared_mutex lastPacketReceivedMutex;
 std::unordered_map<SOCKET, std::chrono::steady_clock::time_point> lastPacketReceived;
 
-int initWinsock(WSADATA& wsData) {
+int init_winsock(WSADATA& wsData) {
 	WORD ver = MAKEWORD(2, 2);
 	return WSAStartup(ver, &wsData);
 }
@@ -31,7 +32,7 @@ SOCKET createSocket() {
 	return socket(AF_INET, SOCK_STREAM, 0);
 }
 
-bool bindSocket(SOCKET& listening) {
+bool bindSocket(const SOCKET& listening) {
 	sockaddr_in hint;
 	hint.sin_family = AF_INET;
 	hint.sin_port = htons(PORT);
@@ -40,7 +41,7 @@ bool bindSocket(SOCKET& listening) {
 	return bind(listening, (sockaddr*)&hint, sizeof(hint)) != SOCKET_ERROR;
 }
 
-bool setSocketToListen(SOCKET& listening) {
+bool setSocketToListen(const SOCKET& listening) {
 	return listen(listening, SOMAXCONN) != SOCKET_ERROR;
 }
 
@@ -52,18 +53,14 @@ void process_clients(const std::vector<SOCKET>& client_sockets, std::atomic<bool
 		FD_ZERO(&readfds);
 		FD_SET(clientSocket, &readfds);
 
-		timeval timeout;
+		timeval timeout{};
 		timeout.tv_sec = 0;
 		timeout.tv_usec = 0;
 
 		const int activity = select(0, &readfds, nullptr, nullptr, &timeout);
 		if (activity == SOCKET_ERROR) {
-			int error = WSAGetLastError();
+			const int error = WSAGetLastError();
 			std::cerr << "Select failed! Error: " << error << std::endl;
-			if (error == WSAENOTSOCK) {
-				disconnect_user(clientSocket);
-				removeClientSocket(clientSocket, true);
-			}
 			continue;
 		}
 
@@ -97,11 +94,11 @@ void timerFunction(const std::atomic<bool>& server_running, ThreadPool& threadPo
 
 		// Check for timeouts
 		{
-			std::unique_lock<std::shared_mutex> lock(clientSocketsMutex);
-			auto currentTime = std::chrono::steady_clock::now();
+			std::shared_lock<std::shared_mutex> lock(lastPacketReceivedMutex);
+			auto current_time = std::chrono::steady_clock::now();
 
 			for (auto it = lastPacketReceived.begin(); it != lastPacketReceived.end(); /* no increment here */) {
-				if (currentTime - it->second > timeoutDuration) {
+				if (current_time - it->second > timeoutDuration) {
 					// Handle socket timeout
 					threadPool.enqueue([&it]() {
 						handle_timeout(it->first);
@@ -154,7 +151,7 @@ int main() {
 
 
 	WSADATA wsData;
-	if (initWinsock(wsData) != 0) {
+	if (init_winsock(wsData) != 0) {
 		std::cerr << "Can't initialize Winsock! Quitting" << std::endl;
 		return 1;
 	}

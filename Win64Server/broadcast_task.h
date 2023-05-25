@@ -17,5 +17,6 @@ protected:
 };
 
 extern std::shared_mutex clientSocketsMutex;
+extern std::shared_mutex lastPacketReceivedMutex;
 extern std::vector<SOCKET> clientSockets;
 extern std::unordered_map<SOCKET, std::chrono::steady_clock::time_point> lastPacketReceived;

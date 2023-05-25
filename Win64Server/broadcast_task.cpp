@@ -14,7 +14,7 @@ void BroadcastTask::execute() {
 	//std::cout << "Ping to all clients..." << std::endl;
 
 	auto& threadPool = get_thread_pool();
-	clientManager.iterateUsers([&](const std::shared_ptr<User>& user) {
+	clientManager.iterate_users([&](const std::shared_ptr<User>& user) {
 		threadPool.enqueue([&user]() { send_ping(*user); });
 		});
 }

@@ -12,6 +12,10 @@ public:
 
 	~BasicStream();
 
+	char* data;
+	std::size_t index;
+	std::size_t data_size;
+
 	int add_data(SOCKET clientSocket);
 
 	std::size_t available() const;
@@ -33,7 +37,6 @@ public:
 	std::string read_std_string();
 
 	const char* read_string();
-	void create_frame(int id);
 
 	void write_byte(uint8_t byte);
 
@@ -46,6 +49,7 @@ public:
 	void write_string(const char* s);
 
 	void ensure_capacity(std::size_t additional_bytes);
+	void create_frame(int id);
 
 	void create_frame_var_size(int id);
 
@@ -80,14 +84,13 @@ public:
 
 	char* get_data() const { return data; }
 
+	std::size_t get_index() const { return index; }
+
 private:
-	char* data;
-	std::size_t data_size;
-	std::size_t index;
 	std::size_t mark;
 	int bit_position;
 	int bit_mask_out[32]{};
-	static constexpr std::size_t frame_stack_size = 100;
-	std::size_t frame_stack[frame_stack_size] = { 0 };
+	static constexpr int frame_stack_size = 100;
+	int frame_stack[frame_stack_size] = { 0 };
 	int frame_stack_ptr = -1;
 };

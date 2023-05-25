@@ -77,7 +77,7 @@ void TransponderPacket::handle(SOCKET clientSocket, const std::shared_ptr<User> 
 void ChangeCyclePacket::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf)
 {
 	const int index = buf.read_unsigned_short();
-	const std::shared_ptr<User> user1 = clientManager.getUserByIndex(index);
+	const std::shared_ptr<User> user1 = clientManager.get_user_by_index(index);
 	const int type = buf.read_unsigned_byte();
 	const long long requestTime = buf.readQWord();
 	if (user1 == user) {
@@ -90,7 +90,7 @@ void MessageRxPacket::handle(SOCKET clientSocket, const std::shared_ptr<User> us
 	const std::string callsign = buf.read_string();
 	const int frequency = static_cast<int>(buf.read3Byte());
 	const std::string message = buf.read_string();
-	const std::shared_ptr<User> asel = clientManager.getUserByCallsign(callsign);
+	const std::shared_ptr<User> asel = clientManager.get_user_by_callsign(callsign);
 	user->iterateLocalUsers([&](const auto& local) {
 		User& users = *local.first;
 		for (const auto& comm : users.frequencies)
@@ -108,7 +108,7 @@ void MessageRxPacket::handle(SOCKET clientSocket, const std::shared_ptr<User> us
 void PilotTitle::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf)
 {
 	const int index = buf.read_unsigned_short();
-	const std::shared_ptr<User> user1 = clientManager.getUserByIndex(index);
+	const std::shared_ptr<User> user1 = clientManager.get_user_by_index(index);
 	const std::string title = buf.read_string();
 	if (user1 == user && user1->getType() == PILOT_CLIENT) {
 		auto& aircraft = dynamic_cast<Aircraft&>(*user);
@@ -143,7 +143,7 @@ void FlightPlanUpdate::handle(SOCKET clientSocket, std::shared_ptr<User> user, B
 {
 	int cur_cycle = buf.read_unsigned_short();
 	int index = buf.read_unsigned_short();
-	std::shared_ptr<User> user1 = clientManager.getUserByIndex(index);
+	std::shared_ptr<User> user1 = clientManager.get_user_by_index(index);
 	int flight_rules = buf.read_unsigned_byte();
 	const std::string assigned_squawk = buf.read_string();
 	const std::string departure = buf.read_string();
@@ -180,7 +180,7 @@ void RequestFlightPlan::handle(SOCKET clientSocket, std::shared_ptr<User> user, 
 {
 	const int index = buf.read_unsigned_short();
 	const int cur_cycle = buf.read_unsigned_short();
-	std::shared_ptr<User> user_fp = clientManager.getUserByIndex(index);
+	std::shared_ptr<User> user_fp = clientManager.get_user_by_index(index);
 	if (user_fp)
 	{
 		if (user_fp->getType() == AV_CLIENT::PILOT)
@@ -196,7 +196,7 @@ void RequestFlightPlan::handle(SOCKET clientSocket, std::shared_ptr<User> user, 
 void PrivateMsgPacket::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf)
 {
 	const std::string callsign = buf.read_string();
-	const std::shared_ptr<User> user1 = clientManager.getUserByCallsign(callsign);
+	const std::shared_ptr<User> user1 = clientManager.get_user_by_callsign(callsign);
 	const std::string message = buf.read_string();
 	if (user1 && user1 != user)
 	{

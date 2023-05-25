@@ -3,7 +3,6 @@
 #include <iostream>
 #include <vector>
 #include <cstdint>
-#include <cstring>
 #include <algorithm>
 #include <atomic>
 #include <mutex>
@@ -12,34 +11,33 @@
 #include "client_manager.h"
 #include "broadcast_task.h"
 #include "basic_stream.h"
+#include "packet.h"
 
 
 extern std::atomic<bool> serverRunning;
-extern std::shared_mutex clientSocketsMutex;
-extern std::vector<SOCKET> clientSockets;
 
-std::shared_mutex dataMutex;
+std::shared_mutex data_mutex;
 
-std::map<SOCKET, std::unique_ptr<BasicStream>> byte_data;
+std::map<SOCKET, std::shared_ptr<BasicStream>> byte_data;
 
 void process_packet(SOCKET clientSocket, int32_t packetId, int32_t size, BasicStream& buf) {
 	//std::cout << "Received packet ID: " << packetId << ", packet size: " << size << std::endl;
 	Packet* packet = packetFactory.getPacket(packetId);
 	if (packet != nullptr) {
-		packet->handle(clientSocket, clientManager.getUserBySocket(clientSocket), buf);
+		packet->handle(clientSocket, clientManager.get_user_by_socket(clientSocket), buf);
 	}
 }
 
 void checkClientData(SOCKET clientSocket) {
-	std::unique_lock<std::shared_mutex> lock(dataMutex);
+	std::unique_lock<std::shared_mutex> lock(data_mutex);
 	auto it = byte_data.find(clientSocket);
 	if (it == byte_data.end()) {
-		byte_data.emplace(clientSocket, std::make_unique<BasicStream>());
+		byte_data.emplace(clientSocket, std::make_shared<BasicStream>());
 	}
 }
 
 void removeClientData(SOCKET clientSocket) {
-	std::unique_lock<std::shared_mutex> lock(dataMutex);
+	std::unique_lock<std::shared_mutex> lock(data_mutex);
 	byte_data.erase(clientSocket);
 }
 
@@ -103,7 +101,7 @@ private:
 		//std::cout << "Received packet ID: " << packetId << ", packet size: " << size << std::endl;
 		Packet* packet = packetFactory.getPacket(packetId);
 		if (packet != nullptr) {
-			packet->handle(clientSocket, clientManager.getUserBySocket(clientSocket), buf);
+			packet->handle(clientSocket, clientManager.get_user_by_socket(clientSocket), buf);
 		}
 	}
 };
@@ -113,16 +111,24 @@ void handle_client(SOCKET clientSocket) {
 	// Initialize the Stream buffer for the clientSocket if not already created
 	checkClientData(clientSocket);
 
-	BasicStream& buf = *byte_data[clientSocket];
+	std::shared_ptr<BasicStream> buf_ptr;
+	{
+		std::shared_lock<std::shared_mutex> lock(data_mutex);
+		buf_ptr = byte_data[clientSocket];
+	}
+	BasicStream& buf = *buf_ptr;
 
 	// Check for available bytes in the socket
 	u_long bytes_available = 0;
 	int result = ioctlsocket(clientSocket, FIONREAD, &bytes_available);
 
-	lastPacketReceived[clientSocket] = std::chrono::steady_clock::now();
+	{
+		std::unique_lock<std::shared_mutex> lock(lastPacketReceivedMutex);
+		lastPacketReceived[clientSocket] = std::chrono::steady_clock::now();
+	}
 
 	// Read data from the socket into the buffer
-	int recv_bytes = buf.add_data(clientSocket);
+	const int recv_bytes = buf.add_data(clientSocket);
 
 	check_recv_error(clientSocket, recv_bytes);
 
@@ -132,15 +138,9 @@ void handle_client(SOCKET clientSocket) {
 
 void check_recv_error(SOCKET clientSocket, int received) {
 	if (received == SOCKET_ERROR) {
-		int error = WSAGetLastError();
+		const int error = WSAGetLastError();
 		if (error != WSAEWOULDBLOCK) {
-			if (error == WSAENOTSOCK) {
-				disconnect_user(clientSocket);
-				removeClientSocket(clientSocket, true);
-			}
-			else {
-				std::cerr << "Error receiving data: " << error << std::endl;
-			}
+			std::cerr << "Error receiving data: " << error << std::endl;
 		}
 	}
 	else if (received == 0) {
@@ -152,7 +152,7 @@ void check_recv_error(SOCKET clientSocket, int received) {
 void disconnect_user(SOCKET clientSocket) {
 	// Perform user-specific cleanup, such as saving user data, notifying other users, etc.
 	// Example:
-	const std::shared_ptr<User> user = clientManager.getUserBySocket(clientSocket);
+	const std::shared_ptr<User> user = clientManager.get_user_by_socket(clientSocket);
 	if (user && user->isValid()) {
 		// Save user data, remove from chat rooms, etc.
 		user->iterateLocalUsers([&](const auto& local) {
@@ -165,7 +165,7 @@ void disconnect_user(SOCKET clientSocket) {
 			adjust_time(local.first);
 			});
 		// Remove the user from the user manager:
-		clientManager.removeUser(clientSocket);
+		clientManager.remove_user(clientSocket);
 	}
 }
 

@@ -31,7 +31,7 @@ void globalUpdate(LPVOID lpParameter)
 	//WaitForSingleObject(m, INFINITE);
 
 	//update local users first (add and delete users around the main user)
-	clientManager.iterateUsers([&](const std::shared_ptr<User>& user) {
+	clientManager.iterate_users([&](const std::shared_ptr<User>& user) {
 		if (user) {
 			updateLocalUsers(user);
 
@@ -44,7 +44,7 @@ void globalUpdate(LPVOID lpParameter)
 		});
 
 	//update users now (which basically means updating the user's local users about main user)
-	clientManager.iterateUsers([&](const std::shared_ptr<User>& user) {
+	clientManager.iterate_users([&](const std::shared_ptr<User>& user) {
 		if (user) {
 			update(user);
 			//check_timeout(user);
@@ -52,14 +52,14 @@ void globalUpdate(LPVOID lpParameter)
 		});
 
 	//updates that can only happen AFTER an update 
-	clientManager.iterateUsers([&](const std::shared_ptr<User>& user) {
+	clientManager.iterate_users([&](const std::shared_ptr<User>& user) {
 		if (user) {
 			updateOnlyQueues(*user);
 		}
 		});
 
 	//finally reset players that required update after global update
-	clientManager.iterateUsers([&](const std::shared_ptr<User>& user) {
+	clientManager.iterate_users([&](const std::shared_ptr<User>& user) {
 		if (user) {
 			user->setUpdateRequired(false);
 		}
@@ -73,7 +73,7 @@ void updateLocalUsers(const std::shared_ptr<User>& user)
 	{
 		const double latitude = user->getLocation().getLatitude();
 		const double longitude = user->getLocation().getLongitude();
-		clientManager.iterateUsers([&](const std::shared_ptr<User>& user2) {
+		clientManager.iterate_users([&](const std::shared_ptr<User>& user2) {
 			if (user && user2 && user != user2)
 			{
 				const double latitude2 = user2->getLocation().getLatitude();

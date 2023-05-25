@@ -1,7 +1,7 @@
 #include "basic_stream.h"
 
 BasicStream::BasicStream(std::size_t preallocateSize)
-	: data(nullptr), data_size(0), index(0), mark(SIZE_MAX), bit_position(0) {
+	: data(nullptr), index(0), data_size(0), mark(SIZE_MAX), bit_position(0) {
 
 	if (preallocateSize > 0) {
 		data = new char[preallocateSize];
@@ -262,7 +262,7 @@ void BasicStream::create_frame_var_size(int id)
 		std::cerr << "Stack overflow" << std::endl;
 	}
 	else {
-		frame_stack[++frame_stack_ptr] = index;
+		frame_stack[++frame_stack_ptr] = static_cast<int>(index);
 	}
 }
 
@@ -272,8 +272,9 @@ void BasicStream::end_frame_var_size()
 		std::cerr << "Stack empty (byte)" << std::endl;
 	}
 	else {
-		const std::size_t frame_size = index - frame_stack[frame_stack_ptr--];
+		const std::size_t frame_size = index - frame_stack[frame_stack_ptr];
 		data[frame_stack[frame_stack_ptr] - 1] = static_cast<char>(frame_size & 0xFF);
+		frame_stack_ptr--;
 	}
 }
 
@@ -283,11 +284,11 @@ void BasicStream::create_frame_var_size_word(int id)
 	write_byte(static_cast<uint8_t>(id));
 	write_short(0); // placeholder for size short
 
-	if (frame_stack_ptr >= frame_stack_size - 1) {
+	if (frame_stack_ptr >= static_cast<int>(frame_stack_size) - 1) {
 		std::cerr << "Stack overflow" << std::endl;
 	}
 	else {
-		frame_stack[++frame_stack_ptr] = index;
+		frame_stack[++frame_stack_ptr] = static_cast<int>(index);
 	}
 }
 
@@ -297,9 +298,10 @@ void BasicStream::end_frame_var_size_word()
 		std::cerr << "Stack empty (short)" << std::endl;
 	}
 	else {
-		const std::size_t frame_size = index - frame_stack[frame_stack_ptr--];
+		const std::size_t frame_size = index - frame_stack[frame_stack_ptr];
 		data[frame_stack[frame_stack_ptr] - 2] = static_cast<char>((frame_size >> 8) & 0xFF);
 		data[frame_stack[frame_stack_ptr] - 1] = static_cast<char>(frame_size & 0xFF);
+		frame_stack_ptr--;
 	}
 }
 
