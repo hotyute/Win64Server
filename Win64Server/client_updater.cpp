@@ -20,28 +20,31 @@ UpdateTask::UpdateTask(ThreadPool& threadPool, std::chrono::milliseconds duratio
 UpdateTask::~UpdateTask() = default;
 
 void UpdateTask::execute() {
-	get_thread_pool().enqueue([&]() {
-		globalUpdate(nullptr);
+	get_thread_pool().enqueue([&]
+		{
+			globalUpdate();
 		});
 }
 
-void globalUpdate(LPVOID lpParameter)
+void globalUpdate()
 {
 
-	//WaitForSingleObject(m, INFINITE);
-
 	//update local users first (add and delete users around the main user)
-	clientManager.iterate_users([&](const std::shared_ptr<User>& user) {
-		if (user) {
-			updateLocalUsers(user);
+	{
+		std::shared_lock<std::shared_mutex> lock(clientManager.client_mutex_);
+		for (const auto& pair : clientManager.clients_) {
+			std::shared_ptr<User> user = pair.second;
+			if (user) {
+				updateLocalUsers(user);
 
-			//flags
-			if (user->isTriggerUpdate()) {
-				user->setUpdateRequired(true);
-				user->setTriggerUpdate(false);
+				//flags
+				if (user->isTriggerUpdate()) {
+					user->setUpdateRequired(true);
+					user->setTriggerUpdate(false);
+				}
 			}
 		}
-		});
+	}
 
 	//update users now (which basically means updating the user's local users about main user)
 	clientManager.iterate_users([&](const std::shared_ptr<User>& user) {
@@ -64,23 +67,19 @@ void globalUpdate(LPVOID lpParameter)
 			user->setUpdateRequired(false);
 		}
 		});
-	//ReleaseMutex(m);
 }
 
-void updateLocalUsers(const std::shared_ptr<User>& user)
-{
-	if (user)
-	{
+void updateLocalUsers(const std::shared_ptr<User>&user) {
+	if (user) {
 		const double latitude = user->getLocation().getLatitude();
 		const double longitude = user->getLocation().getLongitude();
-		clientManager.iterate_users([&](const std::shared_ptr<User>& user2) {
-			if (user && user2 && user != user2)
-			{
+		for (const auto& pair : clientManager.clients_) {
+			std::shared_ptr<User> user2 = pair.second;
+			if (user2 && user != user2) {
 				const double latitude2 = user2->getLocation().getLatitude();
 				const double longitude2 = user2->getLocation().getLongitude();
 				const double distance = dist(latitude, longitude, latitude2, longitude2);
-				if (!contains_user(user, user2) && distance <= user->getVisibilityRange())
-				{
+				if (!contains_user(user, user2) && distance <= user->getVisibilityRange()) {
 					const long long reqInterval = user->getRequestedInterval(user2->getType());
 					if (user2->getUpdateInterval() > reqInterval) {
 						user2->setUpdateInterval(reqInterval);
@@ -93,8 +92,7 @@ void updateLocalUsers(const std::shared_ptr<User>& user)
 						user->local_users.emplace(user2, std::vector<void*>(NUM_ATT));
 					}
 				}
-				else if (contains_user(user, user2) && distance > user->getVisibilityRange())
-				{
+				else if (contains_user(user, user2) && distance > user->getVisibilityRange()) {
 					delete_client(*user, *user2);
 					{
 						std::unique_lock<std::shared_mutex> lock(user->local_mutex);
@@ -104,11 +102,11 @@ void updateLocalUsers(const std::shared_ptr<User>& user)
 					adjust_time(user2);
 				}
 			}
-			});
+		}
 	}
 }
 
-void update(const std::shared_ptr<User>& user) {
+void update(const std::shared_ptr<User>&user) {
 	user->iterateLocalUsers([&](const auto& local_user) {
 		//Update Time
 		const std::shared_ptr<User> other = local_user.first;
@@ -210,7 +208,7 @@ void update(const std::shared_ptr<User>& user) {
 		});
 }
 
-void updateOnlyQueues(User& user) {
+void updateOnlyQueues(User & user) {
 	//TODO move this somewhere else
 	if (user.getType() == AV_CLIENT::PILOT)
 	{
@@ -229,12 +227,12 @@ void updateOnlyQueues(User& user) {
 	}
 }
 
-bool contains_user(const std::shared_ptr<User>& user, const std::shared_ptr<User>& user2) {
+bool contains_user(const std::shared_ptr<User>&user, const std::shared_ptr<User>&user2) {
 	std::shared_lock<std::shared_mutex> lock(user->local_mutex);
 	return (user->local_users.find(user2) != user->local_users.end());
 }
 
-void* timeUpdate(const std::shared_ptr<User>& user, const std::shared_ptr<User>& other) {
+void* timeUpdate(const std::shared_ptr<User>&user, const std::shared_ptr<User>&other) {
 	const long long otherReqInterval = other->getRequestedInterval(user->getType());
 	if (user->getUpdateInterval() > otherReqInterval) {
 		user->setUpdateInterval(otherReqInterval);
@@ -244,7 +242,7 @@ void* timeUpdate(const std::shared_ptr<User>& user, const std::shared_ptr<User>&
 	return nullptr;
 }
 
-void check_timeout(const std::shared_ptr<User>& user)
+void check_timeout(const std::shared_ptr<User>&user)
 {
 	const auto now = std::chrono::high_resolution_clock::now();
 

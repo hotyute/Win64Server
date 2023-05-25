@@ -14,7 +14,7 @@
 
 constexpr int PORT = 4403;
 constexpr int NUM_THREADS = 8;
-constexpr int PROCESS_THREADS = 1;
+constexpr int PROCESS_THREADS = 2;
 constexpr int TIMER_INTERVAL = 30;
 
 std::atomic<bool> serverRunning;
@@ -199,7 +199,7 @@ int main() {
 
 	constexpr std::chrono::milliseconds broadcast_interval(10000);
 	// Create a Tasks
-	constexpr std::chrono::milliseconds update_interval(30); // Broadcast every 10 seconds PING Pakcet
+	constexpr std::chrono::milliseconds update_interval(60); // Broadcast every 10 seconds PING Pakcet
 	BroadcastTask broadcast_task(threadPool, broadcast_interval);
 	UpdateTask update_task(threadPool, update_interval);
 

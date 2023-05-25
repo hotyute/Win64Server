@@ -20,7 +20,7 @@ protected:
     virtual void execute() override;
 };
 
-void globalUpdate(LPVOID);
+void globalUpdate();
 
 void updateLocalUsers(const std::shared_ptr<User>&);
 
