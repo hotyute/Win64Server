@@ -21,7 +21,7 @@ RequestFlightPlan requestFlightPlan(11, 4);
 PrivateMsgPacket privateMsgPacket(12, -2);
 PrimeFreqPacket primeFreqPacket(13, 7);
 
-void PilotUpdate::handle(SOCKET clientSocket, const std::shared_ptr<User> user, BasicStream& buf)
+void PilotUpdate::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
 	const double latitude = longToRawBits(buf.readQWord());
 	const double longitude = longToRawBits(buf.readQWord());
@@ -48,7 +48,7 @@ void PilotUpdate::handle(SOCKET clientSocket, const std::shared_ptr<User> user, 
 	user->setLastPositionUpdate(boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds());
 }
 
-void ControllerUpdate::handle(SOCKET clientSocket, const std::shared_ptr<User> user, BasicStream& buf)
+void ControllerUpdate::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
 	const double latitude = longToRawBits(buf.readQWord());
 	const double longitude = longToRawBits(buf.readQWord());
@@ -57,35 +57,33 @@ void ControllerUpdate::handle(SOCKET clientSocket, const std::shared_ptr<User> u
 	user->setLastPositionUpdate(boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds());
 }
 
-void TransponderPacket::handle(SOCKET clientSocket, const std::shared_ptr<User> user, BasicStream& buf)
+void TransponderPacket::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
 	const std::string code = buf.read_string();
-	if (user->getType() == AV_CLIENT::PILOT)
-	{
+	if (user->getType() == PILOT) {
 		auto& aircraft = dynamic_cast<Aircraft&>(*user);
 		aircraft.setTransponder(code);
 		user->iterateLocalUsers([&user, &aircraft](const auto& local) {
 			User& other = *local.first;
-			if (other.getType() == AV_CLIENT::CONTROLLER)
-			{
+			if (other.getType() == CONTROLLER) {
 				send_client_transponder(other, aircraft);
 			}
 			});
 	}
 }
 
-void ChangeCyclePacket::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf)
+void ChangeCyclePacket::handle(SOCKET client_socket, std::shared_ptr<User> user, BasicStream& buf)
 {
 	const int index = buf.read_unsigned_short();
 	const std::shared_ptr<User> user1 = clientManager.get_user_by_index(index);
 	const int type = buf.read_unsigned_byte();
-	const long long requestTime = buf.readQWord();
+	const long long request_time = buf.readQWord();
 	if (user1 == user) {
-		user->setRequestedInterval(type, requestTime);
+		user->setRequestedInterval(type, request_time);
 	}
 }
 
-void MessageRxPacket::handle(SOCKET clientSocket, const std::shared_ptr<User> user, BasicStream& buf)
+void MessageRxPacket::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
 	const std::string callsign = buf.read_string();
 	const int frequency = static_cast<int>(buf.read3Byte());
@@ -105,7 +103,7 @@ void MessageRxPacket::handle(SOCKET clientSocket, const std::shared_ptr<User> us
 		});
 }
 
-void PilotTitle::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf)
+void PilotTitle::handle(SOCKET client_socket, std::shared_ptr<User> user, BasicStream& buf)
 {
 	const int index = buf.read_unsigned_short();
 	const std::shared_ptr<User> user1 = clientManager.get_user_by_index(index);
@@ -116,10 +114,10 @@ void PilotTitle::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicSt
 	}
 }
 
-void ClientMode::handle(SOCKET clientSocket, const std::shared_ptr<User> user, BasicStream& buf)
+void ClientMode::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
 	const int mode = buf.read_unsigned_byte();
-	if (user->getType() == AV_CLIENT::PILOT)
+	if (user->getType() == PILOT)
 	{
 		auto& aircraft = dynamic_cast<Aircraft&>(*user);
 		aircraft.setMode(mode);
@@ -131,15 +129,15 @@ void ClientMode::handle(SOCKET clientSocket, const std::shared_ptr<User> user, B
 	}
 }
 
-void ClientDisconnect::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf)
+void ClientDisconnect::handle(const SOCKET client_socket, std::shared_ptr<User> user, BasicStream& buf)
 {
 	int flag = buf.read_unsigned_byte();
 	User& _user = *user;
-	closesocket(clientSocket);
+	closesocket(client_socket);
 	printf("[--User: %s has disconnected--]\n", user->getIdentity().username.c_str());
 }
 
-void FlightPlanUpdate::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf)
+void FlightPlanUpdate::handle(SOCKET client_socket, std::shared_ptr<User> user, BasicStream& buf)
 {
 	int cur_cycle = buf.read_unsigned_short();
 	int index = buf.read_unsigned_short();
@@ -176,7 +174,7 @@ void FlightPlanUpdate::handle(SOCKET clientSocket, std::shared_ptr<User> user, B
 	}
 }
 
-void RequestFlightPlan::handle(SOCKET clientSocket, const std::shared_ptr<User> user, BasicStream& buf)
+void RequestFlightPlan::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
 	const int index = buf.read_unsigned_short();
 	const int cur_cycle = buf.read_unsigned_short();
@@ -191,7 +189,7 @@ void RequestFlightPlan::handle(SOCKET clientSocket, const std::shared_ptr<User> 
 	}
 }
 
-void PrivateMsgPacket::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf)
+void PrivateMsgPacket::handle(SOCKET client_socket, std::shared_ptr<User> user, BasicStream& buf)
 {
 	const std::string callsign = buf.read_string();
 	const std::shared_ptr<User> user1 = clientManager.get_user_by_callsign(callsign);
@@ -202,7 +200,7 @@ void PrivateMsgPacket::handle(SOCKET clientSocket, std::shared_ptr<User> user, B
 	}
 }
 
-void PrimeFreqPacket::handle(SOCKET clientSocket, const std::shared_ptr<User> user, BasicStream& buf)
+void PrimeFreqPacket::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
 	int flags = buf.read_unsigned_byte();
 	user->frequencies[0] = static_cast<int>(buf.read3Byte());
