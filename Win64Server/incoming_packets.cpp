@@ -5,7 +5,6 @@
 
 #include "tools.h"
 #include "client_manager.h"
-#include "packet_handler.h"
 
 PilotUpdate pilotUpdate(1, -1);
 TransponderPacket transponderPacket(2, -1);
@@ -36,8 +35,7 @@ void PilotUpdate::handle(SOCKET client_socket, const std::shared_ptr<User> user,
 	const double heading = num4 / 1024.0 * 360.0;
 	const int ground_speed = buf.read_unsigned_short();
 	const double altitude = longToRawBits(buf.readQWord());
-	if (user->getType() == AV_CLIENT::PILOT)
-	{
+	if (user->getType() == PILOT) {
 		auto& aircraft = dynamic_cast<Aircraft&>(*user);
 		aircraft.getState().setPitch(pitch);
 		aircraft.getState().setRoll(roll);
@@ -91,10 +89,8 @@ void MessageRxPacket::handle(SOCKET client_socket, const std::shared_ptr<User> u
 	const std::shared_ptr<User> asel = clientManager.get_user_by_callsign(callsign);
 	user->iterateLocalUsers([&](const auto& local) {
 		User& users = *local.first;
-		for (const auto& comm : users.frequencies)
-		{
-			if (comm != 99998 && comm == frequency)
-			{
+		for (const auto& comm : users.frequencies) {
+			if (comm != 99998 && comm == frequency) {
 				const bool is_asel = (asel ? users.getCallsign() == asel->getCallsign() : false);
 				send_message(users, *user, frequency, message.c_str(), is_asel);
 				break;
@@ -117,8 +113,7 @@ void PilotTitle::handle(SOCKET client_socket, std::shared_ptr<User> user, BasicS
 void ClientMode::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
 	const int mode = buf.read_unsigned_byte();
-	if (user->getType() == PILOT)
-	{
+	if (user->getType() == PILOT) {
 		auto& aircraft = dynamic_cast<Aircraft&>(*user);
 		aircraft.setMode(mode);
 
@@ -152,11 +147,9 @@ void FlightPlanUpdate::handle(SOCKET client_socket, std::shared_ptr<User> user, 
 	const std::string scratch = buf.read_string();
 	const std::string route = buf.read_string();
 	const std::string remarks = buf.read_string();
-	if (user1)
-	{
+	if (user1) {
 		User& user_ref = *user1;
-		if (user_ref.getType() == AV_CLIENT::PILOT)
-		{
+		if (user_ref.getType() == AV_CLIENT::PILOT) {
 			auto& aircraft = dynamic_cast<Aircraft&>(*user);
 			FlightPlan& fp = *aircraft.getFlightPlan();
 			fp.cycle = cur_cycle;
@@ -194,8 +187,7 @@ void PrivateMsgPacket::handle(SOCKET client_socket, std::shared_ptr<User> user, 
 	const std::string callsign = buf.read_string();
 	const std::shared_ptr<User> user1 = clientManager.get_user_by_callsign(callsign);
 	const std::string message = buf.read_string();
-	if (user1 && user1 != user)
-	{
+	if (user1 && user1 != user) {
 		send_private_message(*user1, user->getCallsign(), message.c_str());
 	}
 }
@@ -207,8 +199,7 @@ void PrimeFreqPacket::handle(SOCKET client_socket, const std::shared_ptr<User> u
 	user->frequencies[1] = static_cast<int>(buf.read3Byte());
 	user->iterateLocalUsers([&](const auto& local) {
 		User& users = *local.first;
-		if (users.getType() == AV_CLIENT::CONTROLLER)
-		{
+		if (users.getType() == CONTROLLER) {
 			send_prim_freq(users, *user);
 		}
 		});
