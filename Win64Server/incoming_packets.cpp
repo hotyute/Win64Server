@@ -149,8 +149,8 @@ void FlightPlanUpdate::handle(SOCKET client_socket, std::shared_ptr<User> user, 
 	const std::string remarks = buf.read_string();
 	if (user1) {
 		User& user_ref = *user1;
-		if (user_ref.getType() == AV_CLIENT::PILOT) {
-			auto& aircraft = dynamic_cast<Aircraft&>(*user);
+		if (user_ref.getType() == PILOT) {
+			auto& aircraft = dynamic_cast<Aircraft&>(user_ref);
 			FlightPlan& fp = *aircraft.getFlightPlan();
 			fp.cycle = cur_cycle;
 			fp.squawkCode = assigned_squawk;
