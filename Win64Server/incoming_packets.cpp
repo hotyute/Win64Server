@@ -176,16 +176,14 @@ void FlightPlanUpdate::handle(SOCKET clientSocket, std::shared_ptr<User> user, B
 	}
 }
 
-void RequestFlightPlan::handle(SOCKET clientSocket, std::shared_ptr<User> user, BasicStream& buf)
+void RequestFlightPlan::handle(SOCKET clientSocket, const std::shared_ptr<User> user, BasicStream& buf)
 {
 	const int index = buf.read_unsigned_short();
 	const int cur_cycle = buf.read_unsigned_short();
-	std::shared_ptr<User> user_fp = clientManager.get_user_by_index(index);
-	if (user_fp)
-	{
-		if (user_fp->getType() == AV_CLIENT::PILOT)
-		{
-			auto& aircraft = dynamic_cast<Aircraft&>(*user);
+	const std::shared_ptr<User> user_fp = clientManager.get_user_by_index(index);
+	if (user_fp) {
+		if (user_fp->getType() == PILOT) {
+			auto& aircraft = dynamic_cast<Aircraft&>(*user_fp);
 			if (aircraft.getFlightPlan()->cycle > cur_cycle) {
 				send_flight_plan_cycle(*user, aircraft);
 			}
