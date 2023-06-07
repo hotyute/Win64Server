@@ -70,7 +70,7 @@ void process_clients(const std::vector<SOCKET>& client_sockets, std::atomic<bool
 	}
 }
 
-void timerFunction(const std::atomic<bool>& server_running, ThreadPool& threadPool) {
+void timer_function(const std::atomic<bool>& server_running, ThreadPool& threadPool) {
 	constexpr std::chrono::milliseconds timerCvInterval(30);    // Adjust this value for the desired interval of the timerCv timer
 	constexpr std::chrono::seconds timeoutDuration(11); // Timeout after 11 seconds of inactivity
 
@@ -194,7 +194,7 @@ int main() {
 
 	// Timer thread
 	std::thread timerThread([&]() {
-		timerFunction(serverRunning, threadPool);
+		timer_function(serverRunning, threadPool);
 		});
 
 	constexpr std::chrono::milliseconds broadcast_interval(10000);
