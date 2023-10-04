@@ -97,6 +97,13 @@ public:
     void handle(SOCKET client_socket, std::shared_ptr<User> user, BasicStream& buf) override;
 };
 
+class TempDataPacket : public Packet {
+public:
+    TempDataPacket(int32_t id, int32_t size) : Packet(id, size) {}
+
+    void handle(SOCKET client_socket, std::shared_ptr<User> user, BasicStream& buf) override;
+};
+
 
 extern PongPacket pongPacket;
 extern PilotUpdate pilotUpdate;
@@ -111,3 +118,4 @@ extern FlightPlanUpdate flightPlanUpdate;
 extern RequestFlightPlan requestFlightPlan;
 extern PrivateMsgPacket privateMsgPacket;
 extern PrimeFreqPacket primeFreqPacket;
+extern TempDataPacket tempDataPacket;

@@ -21,4 +21,5 @@ void register_packets()
     packetFactory.registerPacket(requestFlightPlan.getPacketId(), &requestFlightPlan);
     packetFactory.registerPacket(privateMsgPacket.getPacketId(), &privateMsgPacket);
     packetFactory.registerPacket(primeFreqPacket.getPacketId(), &primeFreqPacket);
+    packetFactory.registerPacket(tempDataPacket.getPacketId(), &tempDataPacket);
 }

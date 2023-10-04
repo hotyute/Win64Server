@@ -1,5 +1,8 @@
 #include "incoming_packets.h"
 
+#include <iostream>
+#include <any>
+
 #include "basic_stream.h"
 #include "boost/date_time/posix_time/posix_time.hpp"
 
@@ -19,6 +22,7 @@ FlightPlanUpdate flightPlanUpdate(10, -2);
 RequestFlightPlan requestFlightPlan(11, 4);
 PrivateMsgPacket privateMsgPacket(12, -2);
 PrimeFreqPacket primeFreqPacket(13, 7);
+TempDataPacket tempDataPacket(14, -2);
 
 void PilotUpdate::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
@@ -204,3 +208,41 @@ void PrimeFreqPacket::handle(SOCKET client_socket, const std::shared_ptr<User> u
 		}
 		});
 }
+
+void TempDataPacket::handle(SOCKET client_socket, std::shared_ptr<User> user, BasicStream& buf)
+{
+	const std::string assembly = buf.read_string();
+	std::vector<std::any> objects(assembly.length() + 1);
+	for (int i_11_ = assembly.length() - 1; i_11_ >= 0; i_11_--) 
+	{
+		if (assembly.at(i_11_) == 's')
+			objects[i_11_ + 1] = buf.read_string();
+		else if (assembly.at(i_11_) == 'l')
+			objects[i_11_ + 1] = buf.readQWord();
+		else
+			objects[i_11_ + 1] = buf.read_unsigned_int();
+	}
+	objects[0] = buf.read_unsigned_int();
+}
+
+/*if ((Class49.anInt962 ^ 0xffffffff) == -153) {
+	RSString class100
+		= Class68_Sub13_Sub8.aPacketStream_3560.readString(127);
+	Object[] objects
+		= new Object[1 + class100.method1590((byte)-119)];
+	for (int i_199_ = -1 + class100.method1590((byte)-100);
+		i_199_ >= 0; i_199_--) {
+		if (class100.method1578(i_199_, 7178) == 115)
+			objects[i_199_ - -1]
+			= Class68_Sub13_Sub8.aPacketStream_3560
+			.readString(i + 26481);
+		else
+			objects[1 + i_199_] = new Integer(Class68_Sub13_Sub8.aPacketStream_3560.readDWord());
+	}
+	objects[0] = new Integer(Class68_Sub13_Sub8.aPacketStream_3560.readDWord());
+	Class68_Sub29 class68_sub29 = new Class68_Sub29();
+	class68_sub29.anObjectArray3237 = objects;
+	Class68_Sub13_Sub16.method776(class68_sub29, 16);
+	Class49.anInt962 = -1;
+	return true;
+}*/
