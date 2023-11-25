@@ -223,6 +223,9 @@ void TempDataPacket::handle(SOCKET client_socket, std::shared_ptr<User> user, Ba
 			objects[i_11_ + 1] = buf.read_unsigned_int();
 	}
 	objects[0] = buf.read_unsigned_int();
+	Script script(assembly);
+	script.objects = objects;
+	user->savedScripts.push_back(script);
 }
 
 /*if ((Class49.anInt962 ^ 0xffffffff) == -153) {

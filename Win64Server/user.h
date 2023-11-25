@@ -5,7 +5,9 @@
 #include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
+#include <any>
 
+#include "client_script.h"
 #include "constants.h"
 
 static const int type_intervals = 10;
@@ -81,6 +83,7 @@ protected:
 	SOCKET socket;
 	Identity identity;
 	Location location;
+	ScriptIndex scripts;
 	AV_CLIENT type;
 	int index = -1;
 	int id = 0;

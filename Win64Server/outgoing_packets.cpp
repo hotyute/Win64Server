@@ -197,6 +197,25 @@ void send_prim_freq(User& user, const User& other)
 	write(user, out);
 }
 
+void send_script(User& user, Script& script) {
+	auto out = BasicStream(8);
+	out.create_frame_var_size_word(22);
+	out.write_byte(script.idx);
+	out.write_string(script.assembly.c_str());
+	for (int i_11_ = script.assembly.length() - 1; i_11_ >= 0; i_11_--)
+	{
+		if (script.assembly.at(i_11_) == 's')
+			out.write_string(std::any_cast<std::string>(script.objects[i_11_ + 1]).c_str());
+		else if (script.assembly.at(i_11_) == 'l')
+			out.write_qword(std::any_cast<long long>(script.objects[i_11_ + 1]));
+		else
+			out.write_int(std::any_cast<int>(script.objects[i_11_ + 1]));
+	}
+	out.write_int(std::any_cast<int>(script.objects[0]));
+	out.end_frame_var_size_word();
+	write(user, out);
+}
+
 void write(User& user, BasicStream& stream) {
 	std::lock_guard<std::mutex> lock(user.send_data_mutex);
 	if (stream.get_index() == 0) {

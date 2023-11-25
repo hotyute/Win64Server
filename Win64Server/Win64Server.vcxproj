@@ -171,6 +171,7 @@
     <ClInclude Include="aircraft.h" />
     <ClInclude Include="basic_stream.h" />
     <ClInclude Include="broadcast_task.h" />
+    <ClInclude Include="client_script.h" />
     <ClInclude Include="client_manager.h" />
     <ClInclude Include="client_updater.h" />
     <ClInclude Include="constants.h" />
