@@ -197,10 +197,11 @@ void send_prim_freq(User& user, const User& other)
 	write(user, out);
 }
 
-void send_script(User& user, Script& script) {
-	auto out = BasicStream(8);
+void send_script(User& user, const User& other, ClientScript& script) {
+	auto out = BasicStream(20);
 	out.create_frame_var_size_word(22);
-	out.write_byte(script.idx);
+	out.write_short(other.getIndex());
+	out.write_short(script.idx);
 	out.write_string(script.assembly.c_str());
 	for (int i_11_ = script.assembly.length() - 1; i_11_ >= 0; i_11_--)
 	{

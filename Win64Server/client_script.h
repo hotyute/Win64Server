@@ -1,3 +1,5 @@
+#pragma once
+
 #include <any>
 #include <string>
 #include <vector>
@@ -6,9 +8,9 @@
 #include <queue>
 #include <mutex>
 
-struct Script {
+struct ClientScript {
     int idx = -1;
-    Script(std::string assem) : assembly(assem) {};
+    ClientScript(std::string assem) : assembly(assem) {};
     std::string assembly;
     std::vector<std::any> objects;
 };
@@ -16,7 +18,7 @@ struct Script {
 class ScriptIndex {
 public:
     static const int SIZE = 512;
-    std::shared_ptr<Script> scripts[SIZE];
+    std::shared_ptr<ClientScript> scripts[SIZE];
     std::queue<int> available_indices_;
     std::mutex mtx;
 
@@ -27,7 +29,7 @@ public:
         }
     }
 
-    void addScript(std::shared_ptr<Script> script) {
+    void addScript(std::shared_ptr<ClientScript> script) {
         std::unique_lock<std::mutex> lock(mtx);
         if (!available_indices_.empty()) {
             int idx = available_indices_.front(); // Get the next available index
@@ -40,7 +42,7 @@ public:
         }
     }
 
-    std::shared_ptr<Script> getScript(int idx) {
+    std::shared_ptr<ClientScript> getScript(int idx) {
         std::unique_lock<std::mutex> lock(mtx);
         if (idx >= 0 && idx < SIZE) {
             return scripts[idx];

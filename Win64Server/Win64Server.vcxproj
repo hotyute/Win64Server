@@ -150,6 +150,7 @@
     <ClCompile Include="aircraft.cpp" />
     <ClCompile Include="basic_stream.cpp" />
     <ClCompile Include="broadcast_task.cpp" />
+    <ClCompile Include="client_script.cpp" />
     <ClCompile Include="client_updater.cpp" />
     <ClCompile Include="controller.cpp" />
     <ClCompile Include="database.cpp" />

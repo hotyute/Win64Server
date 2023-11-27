@@ -26,7 +26,7 @@ void send_client_transponder(User& user, const Aircraft& other);
 
 void send_prim_freq(User& user, const User& other);
 
-void send_script(User& user, Script& script);
+void send_script(User& user, const User& other, ClientScript& script);
 
 void send_server_message(User& user, const char* message);
 

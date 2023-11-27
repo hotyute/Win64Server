@@ -3,6 +3,7 @@
 #include <iostream>
 #include <any>
 
+#include "client_script.h"
 #include "basic_stream.h"
 #include "boost/date_time/posix_time/posix_time.hpp"
 
@@ -223,9 +224,9 @@ void TempDataPacket::handle(SOCKET client_socket, std::shared_ptr<User> user, Ba
 			objects[i_11_ + 1] = buf.read_unsigned_int();
 	}
 	objects[0] = buf.read_unsigned_int();
-	Script script(assembly);
+	ClientScript script(assembly);
 	script.objects = objects;
-	user->savedScripts.push_back(script);
+	user->processScript(script);
 }
 
 /*if ((Class49.anInt962 ^ 0xffffffff) == -153) {

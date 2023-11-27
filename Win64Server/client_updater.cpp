@@ -197,11 +197,10 @@ void updateOnlyQueues(User & user) {
 			const FlightPlan& fp = *dynamic_cast<Aircraft&>(user).getFlightPlan();
 			user.iterateLocalUsers([&](const auto& local) {
 				User& other = *local.first;
-				if (other.getType() == AV_CLIENT::CONTROLLER && fp.cycle)
-				{
+				if (other.getType() == AV_CLIENT::CONTROLLER && fp.cycle) {
 					send_flight_plan_cycle(other, user);
 				}
-				});
+			});
 			user.updateOnlyQueues[0] = false;
 		}
 	}
