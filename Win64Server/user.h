@@ -51,7 +51,7 @@ public:
 	SOCKET getClientSocket() const { return socket; }
 	Identity& getIdentity() { return identity; }
 	Location& getLocation() { return location; }
-	ScriptIndex& getScripts() { return scripts; }
+	ScriptIndex<ClientScript>& getScripts() { return scripts; }
 	std::string getCallsign() { return identity.callsign; }
 	const int getVisibilityRange() const { return visibilityRange; }
 	void setVisibilityRange(int val) { visibilityRange = val; }
@@ -86,7 +86,7 @@ protected:
 	SOCKET socket;
 	Identity identity;
 	Location location;
-	ScriptIndex scripts;
+	ScriptIndex<ClientScript> scripts;
 	AV_CLIENT type;
 	int index = -1;
 	int id = 0;
