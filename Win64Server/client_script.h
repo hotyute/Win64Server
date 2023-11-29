@@ -15,10 +15,11 @@ struct ClientScript {
     std::vector<std::any> objects;
 };
 
+template <typename T>
 class ScriptIndex {
 public:
-    static const int SIZE = 512;
-    std::shared_ptr<ClientScript> scripts[SIZE];
+    static const int SIZE = 1024;
+    std::shared_ptr<T> scripts[SIZE];
     std::queue<int> available_indices_;
     std::mutex mtx;
 
@@ -29,7 +30,7 @@ public:
         }
     }
 
-    void addScript(std::shared_ptr<ClientScript> script) {
+    void addScript(std::shared_ptr<T> script) {
         std::unique_lock<std::mutex> lock(mtx);
         if (!available_indices_.empty()) {
             int idx = available_indices_.front(); // Get the next available index
@@ -42,7 +43,7 @@ public:
         }
     }
 
-    std::shared_ptr<ClientScript> getScript(int idx) {
+    std::shared_ptr<T> getScript(int idx) {
         std::unique_lock<std::mutex> lock(mtx);
         if (idx >= 0 && idx < SIZE) {
             return scripts[idx];
