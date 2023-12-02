@@ -79,7 +79,7 @@ public:
 		}
 	}
 
-	void processScript(ClientScript script);
+	void processScript(const ClientScript& script);
 
 
 protected:

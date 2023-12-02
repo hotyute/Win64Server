@@ -221,9 +221,9 @@ void TempDataPacket::handle(SOCKET client_socket, std::shared_ptr<User> user, Ba
 		else if (assembly.at(i_11_) == 'l')
 			objects[i_11_ + 1] = buf.readQWord();
 		else
-			objects[i_11_ + 1] = buf.read_unsigned_int();
+			objects[i_11_ + 1] = (int)buf.read_unsigned_int();
 	}
-	objects[0] = buf.read_unsigned_int();
+	objects[0] = (int)buf.read_unsigned_int();
 	ClientScript script(assembly);
 	script.objects = objects;
 	user->processScript(script);

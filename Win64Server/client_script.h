@@ -10,9 +10,18 @@
 
 struct ClientScript {
     int idx = -1;
-    ClientScript(std::string assem) : assembly(assem) {};
+    int user_idx = -1;
+    ClientScript(std::string assem) : assembly(assem) { objects.resize(assem.length() + 1); }
     std::string assembly;
     std::vector<std::any> objects;
+
+    void copy(ClientScript& script)
+    {
+        this->idx = script.idx;
+        this->user_idx = script.user_idx;
+        this->objects = script.objects;
+        this->assembly = script.assembly;
+    }
 };
 
 template <typename T>

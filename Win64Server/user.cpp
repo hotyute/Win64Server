@@ -13,14 +13,14 @@ User::User(SOCKET clientSocket, int id) : socket(clientSocket), type(), id(id)
 	std::fill(std::begin(frequencies), std::end(frequencies), 99998);
 }
 
-void User::processScript(ClientScript script)
+void User::processScript(const ClientScript& pscript)
 {
-	User& user = *this;
-	getScripts().addScript(std::make_shared<ClientScript>(script));
-	send_script(user, user, script);
+	auto sscript = std::make_shared<ClientScript>(pscript);
+	getScripts().addScript(sscript);
+
+	send_script(*this, *this, *sscript);
 	iterateLocalUsers([&](const auto& local) {
-		User& other = *local.first;
-		send_script(other, user, script);
+		send_script(*local.first, *this, *sscript);
 	});
 }
 
