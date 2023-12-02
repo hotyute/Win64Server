@@ -63,7 +63,6 @@ public:
     void update() override;
 
 	int pilot_rating = 0;
-	bool heavy = false;
 
 	void setTransponder(std::string transponder) { Aircraft::transponder = transponder; }
 	std::string getTransponder() const { return Aircraft::transponder; }
@@ -71,7 +70,9 @@ public:
 	std::string getAcfTitle() const { return acfTitle; }
 	State& getState() { return state; }
 	void setMode(int mode) { Aircraft::mode = mode; }
-	const int getMode() const { return Aircraft::mode; }
+	int getMode() const { return Aircraft::mode; }
+	void setHeavy(bool heavy) { Aircraft::heavy = heavy; }
+	bool isHeavy() const { return Aircraft::heavy; }
 	FlightPlan* getFlightPlan() { return flight_plan; }
 	void createFlightPlan() { flight_plan = new FlightPlan(); }
 
@@ -80,5 +81,6 @@ private:
 	std::string acfTitle;
 	State state;
 	int mode;
+	bool heavy = false;
 	FlightPlan* flight_plan;
 };

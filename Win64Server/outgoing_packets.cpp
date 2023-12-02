@@ -49,7 +49,7 @@ void create_client(User& user, User& client)
 		auto& aircraft = dynamic_cast<Aircraft&>(client);
 		out.write_string(aircraft.getAcfTitle().c_str());
 		out.write_string(aircraft.getTransponder().c_str());
-		out.write_byte(aircraft.getMode() << 4 | (aircraft.heavy ? 1 : 0));
+		out.write_byte(aircraft.getMode() << 4 | (aircraft.isHeavy() ? 1 : 0));
 		out.write_qword(((static_cast<int>((aircraft.getState().getPitch() * 1024.0) / -360.0) << 22)
 			+ (static_cast<int>((aircraft.getState().getRoll() * 1024.0) / -360.0) << 12)
 			+ (static_cast<int>((aircraft.getState().getHeading() * 1024.0) / 360.0) << 2)));
@@ -130,7 +130,7 @@ void send_client_mode_change(User& user, const Aircraft& other) {
 	auto out = BasicStream(4);
 	out.create_frame(16);
 	out.write_short(other.getIndex());
-	out.write_byte(other.getMode());
+	out.write_byte(other.getMode() << 4 | (other.isHeavy() ? 1 : 0));
 	write(user, out);
 }
 

@@ -29,6 +29,7 @@ void HandshakePacket::handle(SOCKET clientSocket, std::shared_ptr<User> user, Ba
 	int controller_rating = 0, controller_position = 0, controller_prim = 99998;
 	int pilotRating = 0;
 	int mode = 0;
+	bool heavy = false;
 	double pitch = 0.0, roll = 0.0, heading = 0.0;
 	if (type == CONTROLLER)
 	{
@@ -40,7 +41,8 @@ void HandshakePacket::handle(SOCKET clientSocket, std::shared_ptr<User> user, Ba
 		pilotRating = buf.read_unsigned_byte();
 		acfTitle = buf.read_string();
 		transponder = buf.read_string();
-		mode = buf.read_unsigned_byte();
+		int i = buf.read_unsigned_byte();
+		mode = i >> 4, heavy = i & 0xF;
 		long long hash = buf.readQWord();
 		pitch = static_cast<int>(hash >> 22) / 1024.0 * -360.0;
 		roll = static_cast<int>(hash >> 12 & 0x3ff) / 1024.0 * -360.0;
@@ -72,6 +74,7 @@ void HandshakePacket::handle(SOCKET clientSocket, std::shared_ptr<User> user, Ba
 			aircraft->setAcfTitle(acfTitle);
 			aircraft->setTransponder(transponder);
 			aircraft->setMode(mode);
+			aircraft->setHeavy(heavy);
 			aircraft->getState().setPitch(pitch);
 			aircraft->getState().setRoll(roll);
 			aircraft->getState().setHeading(heading);

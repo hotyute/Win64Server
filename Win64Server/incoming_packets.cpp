@@ -117,10 +117,12 @@ void PilotTitle::handle(SOCKET client_socket, std::shared_ptr<User> user, BasicS
 
 void ClientMode::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
-	const int mode = buf.read_unsigned_byte();
+	const int i = buf.read_unsigned_byte();
+	const int mode = i >> 4, heavy = i & 0xF;
 	if (user->getType() == PILOT) {
 		auto& aircraft = dynamic_cast<Aircraft&>(*user);
 		aircraft.setMode(mode);
+		aircraft.setHeavy(heavy);
 
 		//TODO move this somewhere else
 		user->iterateLocalUsers([&user, &aircraft](const auto& local) {
