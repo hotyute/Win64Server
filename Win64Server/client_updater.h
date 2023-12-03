@@ -26,6 +26,10 @@ void updateLocalUsers(const std::shared_ptr<User>&);
 
 void update(const std::shared_ptr<User>&);
 
+void send_scripts(const std::shared_ptr<User>& user, const std::shared_ptr<User>& scripts_user);
+
+void send_remove_scripts(const std::shared_ptr<User>& user, const std::shared_ptr<User>& scripts_user);
+
 void send_pos_update(const std::shared_ptr<User>& updated_user, const std::shared_ptr<User>& about_user);
 
 void updateOnlyQueues(User& user);

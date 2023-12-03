@@ -217,6 +217,14 @@ void send_script(User& user, const User& other, ClientScript& script) {
 	write(user, out);
 }
 
+void send_remove_script(User& user, const User& other, ClientScript& script) {
+	auto out = BasicStream(20);
+	out.create_frame(23);
+	out.write_short(other.getIndex());
+	out.write_short(script.idx);
+	write(user, out);
+}
+
 void write(User& user, BasicStream& stream) {
 	std::lock_guard<std::mutex> lock(user.send_data_mutex);
 	if (stream.get_index() == 0) {

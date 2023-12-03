@@ -79,7 +79,9 @@ public:
 		}
 	}
 
-	void processScript(const ClientScript& script);
+	void registerScript(const ClientScript& script);
+
+	void unregisterScript(const ClientScript& pscript);
 
 
 protected:

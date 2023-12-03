@@ -67,7 +67,7 @@ void globalUpdate()
 		});
 }
 
-void updateLocalUsers(const std::shared_ptr<User>&user) {
+void updateLocalUsers(const std::shared_ptr<User>& user) {
 	if (user) {
 		const double latitude = user->getLocation().getLatitude();
 		const double longitude = user->getLocation().getLongitude();
@@ -85,6 +85,7 @@ void updateLocalUsers(const std::shared_ptr<User>&user) {
 					}
 					create_client(*user, *user2);
 					create_flight_plan(*user, *user2);
+					send_scripts(user, user2);
 					{
 						std::unique_lock<std::shared_mutex> lock(user->local_mutex);
 						user->local_users.emplace(user2, std::vector<void*>(NUM_ATT));
@@ -92,6 +93,7 @@ void updateLocalUsers(const std::shared_ptr<User>&user) {
 				}
 				else if (contains_user(user, user2) && distance > user->getVisibilityRange()) {
 					delete_client(*user, *user2);
+					send_remove_scripts(user, user2);
 					{
 						std::unique_lock<std::shared_mutex> lock(user->local_mutex);
 						user->local_users.erase(user2);
@@ -104,7 +106,7 @@ void updateLocalUsers(const std::shared_ptr<User>&user) {
 	}
 }
 
-void update(const std::shared_ptr<User>&user) {
+void update(const std::shared_ptr<User>& user) {
 	user->iterateLocalUsers([&](const auto& local_user) {
 		//Update Time
 		const std::shared_ptr<User> other = local_user.first;
@@ -171,7 +173,21 @@ void update(const std::shared_ptr<User>&user) {
 		});
 }
 
-void send_pos_update(const std::shared_ptr<User>&updated_user, const std::shared_ptr<User>&about_user) {
+void send_scripts(const std::shared_ptr<User>& user, const std::shared_ptr<User>& scripts_user) {
+	for (auto& script : scripts_user->getScripts().getAllScripts())
+	{
+		send_script(*user, *scripts_user, *script);
+	}
+}
+
+void send_remove_scripts(const std::shared_ptr<User>& user, const std::shared_ptr<User>& scripts_user) {
+	for (auto& script : scripts_user->getScripts().getAllScripts())
+	{
+		send_remove_script(*user, *scripts_user, *script);
+	}
+}
+
+void send_pos_update(const std::shared_ptr<User>& updated_user, const std::shared_ptr<User>& about_user) {
 	if (about_user->getType() == PILOT_CLIENT)
 	{
 		const auto aircraft = dynamic_cast<Aircraft*>(about_user.get());
@@ -188,7 +204,7 @@ void send_pos_update(const std::shared_ptr<User>&updated_user, const std::shared
 	}
 }
 
-void updateOnlyQueues(User & user) {
+void updateOnlyQueues(User& user) {
 	//TODO move this somewhere else
 	if (user.getType() == AV_CLIENT::PILOT)
 	{
@@ -200,18 +216,18 @@ void updateOnlyQueues(User & user) {
 				if (other.getType() == AV_CLIENT::CONTROLLER && fp.cycle) {
 					send_flight_plan_cycle(other, user);
 				}
-			});
+				});
 			user.updateOnlyQueues[0] = false;
 		}
 	}
 }
 
-bool contains_user(const std::shared_ptr<User>&user, const std::shared_ptr<User>&user2) {
+bool contains_user(const std::shared_ptr<User>& user, const std::shared_ptr<User>& user2) {
 	std::shared_lock<std::shared_mutex> lock(user->local_mutex);
 	return (user->local_users.find(user2) != user->local_users.end());
 }
 
-std::shared_ptr<long long> timeUpdate(const std::shared_ptr<User>&user, const std::shared_ptr<User>&other) {
+std::shared_ptr<long long> timeUpdate(const std::shared_ptr<User>& user, const std::shared_ptr<User>& other) {
 	const long long otherReqInterval = other->getRequestedInterval(user->getType());
 	if (user->getUpdateInterval() > otherReqInterval) {
 		user->setUpdateInterval(otherReqInterval);
@@ -222,7 +238,7 @@ std::shared_ptr<long long> timeUpdate(const std::shared_ptr<User>&user, const st
 	return std::make_shared<long long>(user->getUpdateInterval());
 }
 
-void check_timeout(const std::shared_ptr<User>&user)
+void check_timeout(const std::shared_ptr<User>& user)
 {
 	const auto now = std::chrono::high_resolution_clock::now();
 

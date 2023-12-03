@@ -28,6 +28,8 @@ void send_prim_freq(User& user, const User& other);
 
 void send_script(User& user, const User& other, ClientScript& script);
 
+void send_remove_script(User& user, const User& other, ClientScript& script);
+
 void send_server_message(User& user, const char* message);
 
 void send_wx(User& user, const char* weather);

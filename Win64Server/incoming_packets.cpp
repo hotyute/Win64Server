@@ -24,6 +24,7 @@ RequestFlightPlan requestFlightPlan(11, 4);
 PrivateMsgPacket privateMsgPacket(12, -2);
 PrimeFreqPacket primeFreqPacket(13, 7);
 TempDataPacket tempDataPacket(14, -2);
+TempDataRemovePacket tempDataRemovePacket(15, 4);
 
 void PilotUpdate::handle(SOCKET client_socket, const std::shared_ptr<User> user, BasicStream& buf)
 {
@@ -228,7 +229,13 @@ void TempDataPacket::handle(SOCKET client_socket, std::shared_ptr<User> user, Ba
 	objects[0] = (int)buf.read_unsigned_int();
 	ClientScript script(assembly);
 	script.objects = objects;
-	user->processScript(script);
+	user->registerScript(script);
+}
+
+void TempDataRemovePacket::handle(SOCKET client_socket, std::shared_ptr<User> user, BasicStream& buf)
+{
+	ClientScript& script = *user->getScripts().getScript(buf.read_unsigned_short());
+	user->unregisterScript(script);
 }
 
 /*if ((Class49.anInt962 ^ 0xffffffff) == -153) {

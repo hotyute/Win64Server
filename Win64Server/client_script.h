@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <queue>
 #include <mutex>
+#include <set>
 
 struct ClientScript {
     int idx = -1;
@@ -30,6 +31,7 @@ public:
     static const int SIZE = 1024;
     std::shared_ptr<T> scripts[SIZE];
     std::queue<int> available_indices_;
+    std::set<int> used_indices_;
     std::mutex mtx;
 
     ScriptIndex() {
@@ -46,6 +48,7 @@ public:
             available_indices_.pop(); // Remove the index from the queue
             scripts[idx] = script;
             script->idx = idx; // Set the index in the Script object
+            used_indices_.insert(idx); // Add the index to the used indices
         }
         else {
             throw std::runtime_error("No free space available");
@@ -67,9 +70,20 @@ public:
         if (idx >= 0 && idx < SIZE) {
             scripts[idx].reset();
             available_indices_.push(idx); // Add the index back to the queue
+            used_indices_.erase(idx); // Remove the index from the used indices
         }
         else {
             throw std::out_of_range("Index out of range");
         }
     }
+
+    std::vector<std::shared_ptr<T>> getAllScripts() {
+        std::unique_lock<std::mutex> lock(mtx);
+        std::vector<std::shared_ptr<T>> non_null_scripts;
+        for (const auto& idx : used_indices_) {
+            non_null_scripts.push_back(scripts[idx]);
+        }
+        return non_null_scripts;
+    }
 };
+
